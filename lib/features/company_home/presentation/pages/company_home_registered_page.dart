@@ -155,7 +155,7 @@ class _Body extends StatelessWidget {
           left: 0,
           right: 0,
           top: 0,
-          child: CompanyHomeHeaderBackground(height: headerHeight-30.h),
+          child: CompanyHomeHeaderBackground(height: headerHeight - 30.h),
         ),
         Positioned(
           left: 16.w,
@@ -177,7 +177,7 @@ class _Body extends StatelessWidget {
         Positioned(
           left: 0,
           right: 0,
-          top: headerHeight-30.h,
+          top: headerHeight - 30.h,
           bottom: 0,
           child: _Sections(
             campaignsFuture: campaignsFuture,
@@ -274,7 +274,6 @@ class _Sections extends StatelessWidget {
   }
 }
 
-
 class _CampaignsRow extends StatelessWidget {
   const _CampaignsRow({required this.future});
 
@@ -283,7 +282,7 @@ class _CampaignsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 268.h,
+      height: 142.h,
       child: FutureBuilder<List<CompanyHomeCampaign>>(
         future: future,
         builder:
