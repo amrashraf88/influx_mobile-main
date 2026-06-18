@@ -225,6 +225,7 @@ class CompanyStarListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
+    final String creatorLabel = _creatorLabel(star);
     return Material(
       color: AppColors.white,
       borderRadius: BorderRadius.circular(14.r),
@@ -265,13 +266,15 @@ class CompanyStarListCard extends StatelessWidget {
                             vertical: 3.h,
                           ),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: AppColors.influencerGradient,
+                            gradient: LinearGradient(
+                              colors: _creatorGradient(star.creatorTypeValue),
                             ),
                             borderRadius: BorderRadius.circular(6.r),
                           ),
                           child: Text(
-                            'Influencer',
+                            creatorLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: AppColors.white,
                               fontSize: 7.5.sp,
@@ -313,7 +316,7 @@ class CompanyStarListCard extends StatelessWidget {
                     ),
                     SizedBox(height: 5.h),
                     Text(
-                      '${star.location} · ${star.categoriesLabel}',
+                      _metaText(star),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -388,6 +391,39 @@ class CompanyStarListCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _creatorLabel(CompanyStarListItem star) {
+  final String label = star.categoriesLabel.trim();
+  if (label.isNotEmpty &&
+      !label.startsWith('{') &&
+      !label.toLowerCase().contains('value:')) {
+    return label;
+  }
+  return switch (star.creatorTypeValue) {
+    'model' => 'Model',
+    'ugc' => 'UGC',
+    'collage' => 'Collage',
+    _ => 'Influencer',
+  };
+}
+
+String _metaText(CompanyStarListItem star) {
+  final String location = star.location.trim();
+  final String label = _creatorLabel(star);
+  if (location.isEmpty) {
+    return label;
+  }
+  return '$location · $label';
+}
+
+List<Color> _creatorGradient(String value) {
+  return switch (value) {
+    'model' => AppColors.modelGradient,
+    'ugc' => AppColors.ugcGradient,
+    'collage' => AppColors.collageGradient,
+    _ => AppColors.influencerGradient,
+  };
 }
 
 class _CompactSocial extends StatelessWidget {

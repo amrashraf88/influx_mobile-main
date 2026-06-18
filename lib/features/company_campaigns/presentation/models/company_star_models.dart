@@ -1,7 +1,7 @@
 import 'package:adzmavall/core/network/api_media.dart';
 import 'package:equatable/equatable.dart';
 
-enum CompanyStarCategory { all, sports, fashion, news }
+enum CompanyStarCategory { all, influencer, model, ugc, collage }
 
 class CompanyStarListItem extends Equatable {
   const CompanyStarListItem({
@@ -12,6 +12,7 @@ class CompanyStarListItem extends Equatable {
     required this.startingPriceLabel,
     required this.coverImageUrl,
     required this.isFavorite,
+    this.creatorTypeValue = 'influencer',
     this.youtubeFollowers = '399.6k',
     this.tiktokFollowers = '399.6k',
     this.facebookFollowers = '399.6k',
@@ -24,17 +25,32 @@ class CompanyStarListItem extends Equatable {
   final String startingPriceLabel;
   final String coverImageUrl;
   final bool isFavorite;
+  final String creatorTypeValue;
   final String youtubeFollowers;
   final String tiktokFollowers;
   final String facebookFollowers;
 
   /// Tolerant parser for `GET /brand/content-creators` rows.
   factory CompanyStarListItem.fromJson(Map<String, dynamic> json) {
+    String stringify(Object? value) {
+      if (value is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+        for (final String key in <String>['label', 'name', 'title', 'value']) {
+          final Object? nested = map[key];
+          if (nested != null && nested.toString().trim().isNotEmpty) {
+            return nested.toString();
+          }
+        }
+      }
+      return value?.toString() ?? '';
+    }
+
     String pick(List<String> keys, [String fallback = '']) {
       for (final String k in keys) {
         final Object? v = json[k];
-        if (v != null && v.toString().trim().isNotEmpty) {
-          return v.toString();
+        final String text = stringify(v).trim();
+        if (text.isNotEmpty) {
+          return text;
         }
       }
       return fallback;
@@ -60,12 +76,39 @@ class CompanyStarListItem extends Equatable {
       for (final Map<String, dynamic> map in maps) {
         for (final String k in keys) {
           final Object? v = map[k];
-          if (v != null && v.toString().trim().isNotEmpty) {
-            return v.toString();
+          final String text = stringify(v).trim();
+          if (text.isNotEmpty) {
+            return text;
           }
         }
       }
       return fallback;
+    }
+
+    String pickCreatorTypeValue() {
+      for (final String key in <String>[
+        'creator_type',
+        'creatorType',
+        'type',
+        'category',
+      ]) {
+        final Object? value = json[key];
+        if (value is Map) {
+          final Object? rawValue =
+              value['value'] ?? value['key'] ?? value['id'];
+          if (rawValue != null && rawValue.toString().trim().isNotEmpty) {
+            return _normalizeCreatorType(rawValue.toString());
+          }
+        }
+      }
+      return _normalizeCreatorType(
+        pickNested(<String>[
+          'creator_type',
+          'creatorType',
+          'type',
+          'category',
+        ], 'influencer'),
+      );
     }
 
     final Object? favRaw =
@@ -105,7 +148,7 @@ class CompanyStarListItem extends Equatable {
         'type',
         'creator_type',
         'creatorType',
-      ]),
+      ], 'Influencer'),
       startingPriceLabel: pickNested(<String>[
         'starting_price_label',
         'starting_price',
@@ -134,6 +177,7 @@ class CompanyStarListItem extends Equatable {
         ]),
       ),
       isFavorite: isFavorite,
+      creatorTypeValue: pickCreatorTypeValue(),
       youtubeFollowers: pickNested(<String>[
         'youtube_followers',
         'youtubeFollowers',
@@ -155,6 +199,20 @@ class CompanyStarListItem extends Equatable {
     );
   }
 
+  static String _normalizeCreatorType(String value) {
+    final String lower = value.trim().toLowerCase();
+    if (lower.contains('ugc') || lower.contains('user generated')) {
+      return 'ugc';
+    }
+    if (lower.contains('collage') || lower.contains('college')) {
+      return 'collage';
+    }
+    if (lower.contains('model')) {
+      return 'model';
+    }
+    return 'influencer';
+  }
+
   CompanyStarListItem copyWith({bool? isFavorite}) {
     return CompanyStarListItem(
       id: id,
@@ -164,6 +222,7 @@ class CompanyStarListItem extends Equatable {
       startingPriceLabel: startingPriceLabel,
       coverImageUrl: coverImageUrl,
       isFavorite: isFavorite ?? this.isFavorite,
+      creatorTypeValue: creatorTypeValue,
       youtubeFollowers: youtubeFollowers,
       tiktokFollowers: tiktokFollowers,
       facebookFollowers: facebookFollowers,
@@ -179,6 +238,7 @@ class CompanyStarListItem extends Equatable {
     startingPriceLabel,
     coverImageUrl,
     isFavorite,
+    creatorTypeValue,
   ];
 }
 

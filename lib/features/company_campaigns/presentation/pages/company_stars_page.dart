@@ -76,8 +76,7 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
         return false;
       }
       if (!widget.selectionMode && _category != CompanyStarCategory.all) {
-        final String categoryName = _category.name.toLowerCase();
-        if (!s.categoriesLabel.toLowerCase().contains(categoryName)) {
+        if (s.creatorTypeValue.toLowerCase() != _category.name) {
           return false;
         }
       }
@@ -198,27 +197,34 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
                           setState(() => _category = CompanyStarCategory.all),
                     ),
                     _CategoryChip(
-                      label: AppStrings.of(locale, 'company_star_cat_sports'),
-                      selected: _category == CompanyStarCategory.sports,
-                      icon: Icons.sports_soccer_outlined,
+                      label: 'Influencer',
+                      selected: _category == CompanyStarCategory.influencer,
+                      icon: Icons.campaign_outlined,
                       onTap: () => setState(
-                        () => _category = CompanyStarCategory.sports,
+                        () => _category = CompanyStarCategory.influencer,
                       ),
                     ),
                     _CategoryChip(
-                      label: AppStrings.of(locale, 'company_star_cat_fashion'),
-                      selected: _category == CompanyStarCategory.fashion,
-                      icon: Icons.local_fire_department_outlined,
-                      onTap: () => setState(
-                        () => _category = CompanyStarCategory.fashion,
-                      ),
-                    ),
-                    _CategoryChip(
-                      label: AppStrings.of(locale, 'company_star_cat_news'),
-                      selected: _category == CompanyStarCategory.news,
-                      icon: Icons.remove_red_eye_outlined,
+                      label: 'Model',
+                      selected: _category == CompanyStarCategory.model,
+                      icon: Icons.person_outline_rounded,
                       onTap: () =>
-                          setState(() => _category = CompanyStarCategory.news),
+                          setState(() => _category = CompanyStarCategory.model),
+                    ),
+                    _CategoryChip(
+                      label: 'UGC',
+                      selected: _category == CompanyStarCategory.ugc,
+                      icon: Icons.video_camera_front_outlined,
+                      onTap: () =>
+                          setState(() => _category = CompanyStarCategory.ugc),
+                    ),
+                    _CategoryChip(
+                      label: 'Collage',
+                      selected: _category == CompanyStarCategory.collage,
+                      icon: Icons.school_outlined,
+                      onTap: () => setState(
+                        () => _category = CompanyStarCategory.collage,
+                      ),
                     ),
                   ],
                 ),
