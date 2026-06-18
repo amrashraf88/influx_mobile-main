@@ -54,11 +54,7 @@ class CompanyStarsRepository {
 
     return CompanyStarProfile(
       id: pick(<String>['id', 'uuid'], base.id),
-      name: pick(<String>[
-        'name',
-        'full_name',
-        'display_name',
-      ], base.name),
+      name: pick(<String>['name', 'full_name', 'display_name'], base.name),
       headline: pick(<String>[
         'headline',
         'title',
@@ -66,16 +62,12 @@ class CompanyStarsRepository {
         'niche',
       ], base.headline),
       bio: pick(<String>['bio', 'about', 'description'], base.bio),
-      avatarUrl: ApiMedia.resolve(pick(<String>[
-        'avatar_url',
-        'image_url',
-        'photo',
-      ], base.avatarUrl)),
-      coverImageUrl: ApiMedia.resolve(pick(<String>[
-        'cover_image_url',
-        'cover',
-        'image',
-      ], base.coverImageUrl)),
+      avatarUrl: ApiMedia.resolve(
+        pick(<String>['avatar_url', 'image_url', 'photo'], base.avatarUrl),
+      ),
+      coverImageUrl: ApiMedia.resolve(
+        pick(<String>['cover_image_url', 'cover', 'image'], base.coverImageUrl),
+      ),
       mawthooqLabel: pick(<String>[
         'mawthooq_label',
         'maroof',
@@ -110,10 +102,17 @@ class CompanyStarsRepository {
         'items',
         'content_creators',
         'creators',
+        'contentCreators',
       ]) {
         final Object? v = map[key];
         if (v is List<dynamic>) {
           return v;
+        }
+        if (v is Map) {
+          final List<dynamic> nested = _extractList(v);
+          if (nested.isNotEmpty) {
+            return nested;
+          }
         }
       }
     }

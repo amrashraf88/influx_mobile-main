@@ -61,10 +61,7 @@ class CompanyStarGridCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: <Widget>[
-                    CachedNetworkImage(
-                      imageUrl: star.coverImageUrl,
-                      fit: BoxFit.cover,
-                    ),
+                    _StarImage(url: star.coverImageUrl),
                     if (!selectionMode)
                       Positioned(
                         top: 8.h,
@@ -258,10 +255,7 @@ class CompanyStarListCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: <Widget>[
-                      CachedNetworkImage(
-                        imageUrl: star.coverImageUrl,
-                        fit: BoxFit.cover,
-                      ),
+                      _StarImage(url: star.coverImageUrl),
                       Positioned(
                         left: 6.w,
                         top: 6.h,
@@ -418,6 +412,44 @@ class _CompactSocial extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StarImage extends StatelessWidget {
+  const _StarImage({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.trim().isEmpty) {
+      return _ImageFallback(size: 28.sp);
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, _) => Container(color: const Color(0xFFE5E7EB)),
+      errorWidget: (_, _, _) => _ImageFallback(size: 28.sp),
+    );
+  }
+}
+
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFE5E7EB),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.person_outline_rounded,
+        size: size,
+        color: AppColors.textMuted,
+      ),
     );
   }
 }

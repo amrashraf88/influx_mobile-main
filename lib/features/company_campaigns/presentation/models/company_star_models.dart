@@ -40,6 +40,34 @@ class CompanyStarListItem extends Equatable {
       return fallback;
     }
 
+    String pickNested(List<String> keys, [String fallback = '']) {
+      final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+      for (final String objectKey in <String>[
+        'user',
+        'profile',
+        'content_creator',
+        'contentCreator',
+        'creator',
+        'media',
+        'image',
+        'avatar',
+      ]) {
+        final Object? value = json[objectKey];
+        if (value is Map) {
+          maps.add(Map<String, dynamic>.from(value));
+        }
+      }
+      for (final Map<String, dynamic> map in maps) {
+        for (final String k in keys) {
+          final Object? v = map[k];
+          if (v != null && v.toString().trim().isNotEmpty) {
+            return v.toString();
+          }
+        }
+      }
+      return fallback;
+    }
+
     final Object? favRaw =
         json['is_favorite'] ?? json['favorite'] ?? json['favorited'];
     final bool isFavorite = favRaw is bool
@@ -49,37 +77,81 @@ class CompanyStarListItem extends Equatable {
     final Object? cityRaw = json['city'] ?? json['location'];
     final String location = cityRaw is Map
         ? (Map<String, dynamic>.from(cityRaw)['name']?.toString() ?? '')
-        : pick(<String>['location', 'city', 'address', 'country']);
+        : pickNested(<String>[
+            'location',
+            'city',
+            'address',
+            'country',
+            'country_name',
+            'countryName',
+          ]);
 
     return CompanyStarListItem(
       id: pick(<String>['id', 'uuid']),
-      name: pick(<String>[
+      name: pickNested(<String>[
         'name',
         'full_name',
+        'fullName',
         'display_name',
+        'displayName',
         'username',
       ], 'Creator'),
       location: location,
-      categoriesLabel: pick(<String>[
+      categoriesLabel: pickNested(<String>[
         'categories_label',
+        'categoriesLabel',
         'category',
         'niche',
         'type',
+        'creator_type',
+        'creatorType',
       ]),
-      startingPriceLabel: pick(<String>[
+      startingPriceLabel: pickNested(<String>[
         'starting_price_label',
         'starting_price',
+        'startingPrice',
         'min_price',
+        'minPrice',
         'price',
       ]),
-      coverImageUrl: ApiMedia.resolve(pick(<String>[
-        'cover_image_url',
-        'image_url',
-        'avatar_url',
-        'photo',
-        'image',
-      ])),
+      coverImageUrl: ApiMedia.resolve(
+        pickNested(<String>[
+          'cover_image_url',
+          'coverImageUrl',
+          'image_url',
+          'imageUrl',
+          'avatar_url',
+          'avatarUrl',
+          'profile_image_url',
+          'profileImageUrl',
+          'profile_photo_url',
+          'profilePhotoUrl',
+          'url',
+          'path',
+          'photo',
+          'cover',
+          'image',
+        ]),
+      ),
       isFavorite: isFavorite,
+      youtubeFollowers: pickNested(<String>[
+        'youtube_followers',
+        'youtubeFollowers',
+        'yt_followers',
+        'ytFollowers',
+      ], '399.6k'),
+      tiktokFollowers: pickNested(<String>[
+        'tiktok_followers',
+        'tiktokFollowers',
+        'tik_tok_followers',
+        'tikTokFollowers',
+      ], '399.6k'),
+      facebookFollowers: pickNested(<String>[
+        'facebook_followers',
+        'facebookFollowers',
+        'fb_followers',
+        'fbFollowers',
+      ], '399.6k'),
     );
   }
 
