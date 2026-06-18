@@ -225,7 +225,9 @@ class CompanyStarListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
-    final String creatorLabel = _creatorLabel(star);
+    final String creatorLabel = _creatorTypeLabel(star.creatorTypeValue);
+    final List<_SocialValue> socials = _socialValues(star);
+    final String startingPrice = _cleanPrice(star.startingPriceLabel);
     return Material(
       color: AppColors.white,
       borderRadius: BorderRadius.circular(14.r),
@@ -233,9 +235,10 @@ class CompanyStarListCard extends StatelessWidget {
         onTap: onCardTap,
         borderRadius: BorderRadius.circular(14.r),
         child: Container(
-          height: 112.h,
+          constraints: BoxConstraints(minHeight: 128.h),
           padding: EdgeInsets.all(12.w),
           decoration: BoxDecoration(
+            color: AppColors.white,
             borderRadius: BorderRadius.circular(14.r),
             boxShadow: <BoxShadow>[
               BoxShadow(
@@ -251,8 +254,8 @@ class CompanyStarListCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10.r),
                 child: SizedBox(
-                  width: 88.w,
-                  height: 88.h,
+                  width: 96.w,
+                  height: 104.h,
                   child: Stack(
                     fit: StackFit.expand,
                     children: <Widget>[
@@ -290,6 +293,7 @@ class CompanyStarListCard extends StatelessWidget {
               SizedBox(width: 12.w),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Row(
@@ -314,74 +318,96 @@ class CompanyStarListCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: 5.h),
+                    SizedBox(height: 6.h),
                     Text(
                       _metaText(star),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 9.5.sp,
                         color: AppColors.textMuted,
-                        height: 1.1,
+                        height: 1.25,
                       ),
                     ),
-                    SizedBox(height: 8.h),
-                    Row(
-                      children: <Widget>[
-                        _CompactSocial(
-                          iconAsset: ImageAssets.homeInfluencerYoutube,
-                          value: star.youtubeFollowers,
-                        ),
-                        SizedBox(width: 10.w),
-                        _CompactSocial(
-                          iconAsset: ImageAssets.homeInfluencerTiktok,
-                          value: star.tiktokFollowers,
-                        ),
-                        SizedBox(width: 10.w),
-                        _CompactSocial(
-                          iconAsset: ImageAssets.homeInfluencerFacebook,
-                          value: star.facebookFollowers,
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: <Widget>[
-                        Text(
-                          AppStrings.of(locale, 'home_starting_from'),
-                          style: TextStyle(
-                            fontSize: 9.sp,
-                            color: AppColors.textMuted,
+                    if (socials.isNotEmpty) ...<Widget>[
+                      SizedBox(height: 9.h),
+                      Wrap(
+                        spacing: 8.w,
+                        runSpacing: 5.h,
+                        children: socials
+                            .map(
+                              (_SocialValue social) => _CompactSocial(
+                                iconAsset: social.iconAsset,
+                                value: social.value,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                    SizedBox(height: 10.h),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 7.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F9FF),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              AppStrings.of(locale, 'home_starting_from'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 5.w),
-                        Text(
-                          star.startingPriceLabel,
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: AppColors.brandBlue,
-                            fontWeight: FontWeight.w800,
+                          SizedBox(width: 6.w),
+                          Text(
+                            startingPrice.isEmpty ? '-' : startingPrice,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: AppColors.brandBlue,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                      ],
+                          if (startingPrice.isNotEmpty) ...<Widget>[
+                            SizedBox(width: 4.w),
+                            Image.asset(
+                              ImageAssets.rsIcon,
+                              width: 13.w,
+                              height: 13.h,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
               SizedBox(width: 6.w),
-              InkWell(
-                onTap: onFavoriteToggle,
-                borderRadius: BorderRadius.circular(20.r),
-                child: Padding(
-                  padding: EdgeInsets.all(4.w),
-                  child: Icon(
-                    star.isFavorite
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    size: 22.sp,
-                    color: star.isFavorite
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFFD3D8E1),
+              Align(
+                alignment: Alignment.topCenter,
+                child: InkWell(
+                  onTap: onFavoriteToggle,
+                  borderRadius: BorderRadius.circular(20.r),
+                  child: Padding(
+                    padding: EdgeInsets.all(4.w),
+                    child: Icon(
+                      star.isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      size: 22.sp,
+                      color: star.isFavorite
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFFD3D8E1),
+                    ),
                   ),
                 ),
               ),
@@ -393,14 +419,8 @@ class CompanyStarListCard extends StatelessWidget {
   }
 }
 
-String _creatorLabel(CompanyStarListItem star) {
-  final String label = star.categoriesLabel.trim();
-  if (label.isNotEmpty &&
-      !label.startsWith('{') &&
-      !label.toLowerCase().contains('value:')) {
-    return label;
-  }
-  return switch (star.creatorTypeValue) {
+String _creatorTypeLabel(String value) {
+  return switch (value) {
     'model' => 'Model',
     'ugc' => 'UGC',
     'collage' => 'Collage',
@@ -408,11 +428,61 @@ String _creatorLabel(CompanyStarListItem star) {
   };
 }
 
+String _cleanCategoryLabel(CompanyStarListItem star) {
+  final String label = star.categoriesLabel.trim();
+  if (label.isEmpty ||
+      label.startsWith('{') ||
+      label.toLowerCase().contains('value:')) {
+    return _creatorTypeLabel(star.creatorTypeValue);
+  }
+  return label;
+}
+
+String _cleanPrice(String value) {
+  return value
+      .trim()
+      .replaceAll(
+        RegExp(r'\s*(SAR|ريال|ر\.س|﷼|\$)\s*', caseSensitive: false),
+        '',
+      )
+      .trim();
+}
+
+List<_SocialValue> _socialValues(CompanyStarListItem star) {
+  final List<_SocialValue> values = <_SocialValue>[
+    _SocialValue(
+      iconAsset: ImageAssets.homeInfluencerYoutube,
+      value: star.youtubeFollowers,
+    ),
+    _SocialValue(
+      iconAsset: ImageAssets.homeInfluencerTiktok,
+      value: star.tiktokFollowers,
+    ),
+    _SocialValue(
+      iconAsset: ImageAssets.homeInfluencerFacebook,
+      value: star.facebookFollowers,
+    ),
+  ];
+  return values
+      .where((_SocialValue social) => social.value.trim().isNotEmpty)
+      .toList();
+}
+
+class _SocialValue {
+  const _SocialValue({required this.iconAsset, required this.value});
+
+  final String iconAsset;
+  final String value;
+}
+
 String _metaText(CompanyStarListItem star) {
   final String location = star.location.trim();
-  final String label = _creatorLabel(star);
+  final String label = _cleanCategoryLabel(star);
   if (location.isEmpty) {
     return label;
+  }
+  if (label.isEmpty || label == _creatorTypeLabel(star.creatorTypeValue)) {
+    return location;
   }
   return '$location · $label';
 }
@@ -434,20 +504,32 @@ class _CompactSocial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Image.asset(iconAsset, width: 16.w, height: 16.w, fit: BoxFit.contain),
-        SizedBox(width: 4.w),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 9.5.sp,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimaryDark,
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F9FC),
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Image.asset(
+            iconAsset,
+            width: 13.w,
+            height: 13.w,
+            fit: BoxFit.contain,
           ),
-        ),
-      ],
+          SizedBox(width: 4.w),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimaryDark,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

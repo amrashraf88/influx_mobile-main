@@ -13,9 +13,9 @@ class CompanyStarListItem extends Equatable {
     required this.coverImageUrl,
     required this.isFavorite,
     this.creatorTypeValue = 'influencer',
-    this.youtubeFollowers = '399.6k',
-    this.tiktokFollowers = '399.6k',
-    this.facebookFollowers = '399.6k',
+    this.youtubeFollowers = '',
+    this.tiktokFollowers = '',
+    this.facebookFollowers = '',
   });
 
   final String id;
@@ -129,6 +129,37 @@ class CompanyStarListItem extends Equatable {
             'countryName',
           ]);
 
+    final List<dynamic> socialRows = _extractNamedLists(json, <String>[
+      'accounts',
+      'social_accounts',
+      'socialAccounts',
+      'platforms',
+      'ad_prices',
+      'adPrices',
+      'prices',
+    ]);
+    final String youtubeFollowers = _pickSocialFollowers(socialRows, <String>[
+      'youtube',
+      'you tube',
+      'yt',
+    ]);
+    final String tiktokFollowers = _pickSocialFollowers(socialRows, <String>[
+      'tiktok',
+      'tik tok',
+    ]);
+    final String facebookFollowers = _pickSocialFollowers(socialRows, <String>[
+      'facebook',
+      'fb',
+    ]);
+    final String startingPrice = pickNested(<String>[
+      'starting_price_label',
+      'starting_price',
+      'startingPrice',
+      'min_price',
+      'minPrice',
+      'price',
+    ], _pickLowestPrice(socialRows));
+
     return CompanyStarListItem(
       id: pick(<String>['id', 'uuid']),
       name: pickNested(<String>[
@@ -149,14 +180,7 @@ class CompanyStarListItem extends Equatable {
         'creator_type',
         'creatorType',
       ], 'Influencer'),
-      startingPriceLabel: pickNested(<String>[
-        'starting_price_label',
-        'starting_price',
-        'startingPrice',
-        'min_price',
-        'minPrice',
-        'price',
-      ]),
+      startingPriceLabel: startingPrice,
       coverImageUrl: ApiMedia.resolve(
         pickNested(<String>[
           'cover_image_url',
@@ -178,25 +202,171 @@ class CompanyStarListItem extends Equatable {
       ),
       isFavorite: isFavorite,
       creatorTypeValue: pickCreatorTypeValue(),
-      youtubeFollowers: pickNested(<String>[
-        'youtube_followers',
-        'youtubeFollowers',
-        'yt_followers',
-        'ytFollowers',
-      ], '399.6k'),
-      tiktokFollowers: pickNested(<String>[
-        'tiktok_followers',
-        'tiktokFollowers',
-        'tik_tok_followers',
-        'tikTokFollowers',
-      ], '399.6k'),
-      facebookFollowers: pickNested(<String>[
-        'facebook_followers',
-        'facebookFollowers',
-        'fb_followers',
-        'fbFollowers',
-      ], '399.6k'),
+      youtubeFollowers: _formatMetric(
+        pickNested(<String>[
+          'youtube_followers',
+          'youtubeFollowers',
+          'yt_followers',
+          'ytFollowers',
+        ], youtubeFollowers),
+      ),
+      tiktokFollowers: _formatMetric(
+        pickNested(<String>[
+          'tiktok_followers',
+          'tiktokFollowers',
+          'tik_tok_followers',
+          'tikTokFollowers',
+        ], tiktokFollowers),
+      ),
+      facebookFollowers: _formatMetric(
+        pickNested(<String>[
+          'facebook_followers',
+          'facebookFollowers',
+          'fb_followers',
+          'fbFollowers',
+        ], facebookFollowers),
+      ),
     );
+  }
+
+  static List<dynamic> _extractNamedLists(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    final List<dynamic> lists = <dynamic>[];
+    void visit(Object? value) {
+      if (value is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+        for (final String key in keys) {
+          final Object? candidate = map[key];
+          if (candidate is List) {
+            lists.addAll(candidate);
+          } else if (candidate is Map) {
+            lists.add(candidate);
+          }
+        }
+        for (final Object? child in map.values) {
+          if (child is Map) {
+            visit(child);
+          }
+        }
+      }
+    }
+
+    visit(json);
+    return lists;
+  }
+
+  static String _pickSocialFollowers(
+    List<dynamic> rows,
+    List<String> platformNames,
+  ) {
+    for (final Object? row in rows) {
+      if (row is! Map) {
+        continue;
+      }
+      final Map<String, dynamic> map = Map<String, dynamic>.from(row);
+      final String platform = _stringify(
+        map['platform'] ??
+            map['platform_name'] ??
+            map['platformName'] ??
+            map['name'] ??
+            map['label'] ??
+            map['type'],
+      ).toLowerCase();
+      if (!platformNames.any(platform.contains)) {
+        continue;
+      }
+      for (final String key in <String>[
+        'followers',
+        'followers_count',
+        'followersCount',
+        'followers_label',
+        'followersLabel',
+        'count',
+        'audience',
+      ]) {
+        final String value = _stringify(map[key]).trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+    }
+    return '';
+  }
+
+  static String _pickLowestPrice(List<dynamic> rows) {
+    num? lowest;
+    String label = '';
+    for (final Object? row in rows) {
+      if (row is! Map) {
+        continue;
+      }
+      final Map<String, dynamic> map = Map<String, dynamic>.from(row);
+      for (final String key in <String>[
+        'starting_price',
+        'startingPrice',
+        'min_price',
+        'minPrice',
+        'coverage_price',
+        'coveragePrice',
+        'story_price',
+        'storyPrice',
+        'post_price',
+        'postPrice',
+        'video_price',
+        'videoPrice',
+        'price',
+      ]) {
+        final String raw = _stringify(map[key]).trim();
+        final num? price = num.tryParse(raw.replaceAll(',', ''));
+        if (price != null && (lowest == null || price < lowest)) {
+          lowest = price;
+          label = raw;
+        }
+      }
+    }
+    return label;
+  }
+
+  static String _stringify(Object? value) {
+    if (value is Map) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+      for (final String key in <String>[
+        'label',
+        'name',
+        'title',
+        'value',
+        'count',
+        'amount',
+        'price',
+      ]) {
+        final Object? nested = map[key];
+        if (nested != null && nested.toString().trim().isNotEmpty) {
+          return nested.toString();
+        }
+      }
+      return '';
+    }
+    return value?.toString() ?? '';
+  }
+
+  static String _formatMetric(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.contains(RegExp(r'[kKmM]'))) {
+      return trimmed;
+    }
+    final num? numeric = num.tryParse(trimmed.replaceAll(',', ''));
+    if (numeric == null) {
+      return trimmed;
+    }
+    if (numeric.abs() >= 1000000) {
+      return '${(numeric / 1000000).toStringAsFixed(1)}m';
+    }
+    if (numeric.abs() >= 1000) {
+      return '${(numeric / 1000).toStringAsFixed(1)}k';
+    }
+    return numeric % 1 == 0 ? numeric.toInt().toString() : numeric.toString();
   }
 
   static String _normalizeCreatorType(String value) {
