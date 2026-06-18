@@ -1,0 +1,118 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# lock files
+**/pubspec.lock
+
+# certificate files
+*.cer
+*.p12
+
+# environment variable files (e.g. .env.* files)
+*.env
+
+# generated files
+*.g.dart
+*.freezed.dart
+*.config.dart
+*.gen.dart
+*.auto_mappr.dart
+**/generated
+**/gen
+**/.fvm
+.vscode/launch.json
+
+# Flutter debugging files
+flutter_lldb_helper.py
+
+# iOS build artifacts
+**/ios/Pods/
+**/ios/Podfile.lock
+**/ios/Runner.xcworkspace/xcuserdata
+**/ios/Runner.xcodeproj/xcuserdata
+**/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/.symlinks/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/.generated/
+
+# Android build artifacts
+**/android/.gradle/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/.externalNativeBuild
+**/android/captures/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# macOS build artifacts
+**/macos/Pods/
+**/macos/Podfile.lock
+**/macos/.symlinks/
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/Generated.xcconfig
+**/macos/Flutter/flutter_export_environment.sh
+
+# Web build artifacts
+**/web/.dart_tool/
+**/web/build/
+
+# Linux build artifacts
+**/linux/.dart_tool/
+**/linux/build/
+
+# Windows build artifacts
+**/windows/.dart_tool/
+**/windows/build/
+
+# Test coverage
+test/.test_coverage.dart
