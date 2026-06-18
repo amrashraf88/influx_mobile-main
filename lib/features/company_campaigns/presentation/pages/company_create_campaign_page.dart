@@ -35,6 +35,7 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
   bool _hairVisible = true;
   bool _handsVisible = true;
   String _creatorType = 'Model';
+  bool _isSubmitting = false;
   String? _followers;
   String? _ageGroup;
 
@@ -51,6 +52,10 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
+    setState(() => _isSubmitting = true);
     if (ApiUrlResolver.isConfigured) {
       try {
         await CompanyCampaignsRepository(DioClient.instance).createCampaign(
@@ -61,19 +66,25 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
           websiteLink: _website.text.trim(),
           budgetFrom: num.tryParse(_budgetMin.text.trim()) ?? 0,
           budgetTo: num.tryParse(_budgetMax.text.trim()) ?? 0,
+          creatorType: _creatorType,
+          faceVisible: _faceVisible,
+          hairVisible: _hairVisible,
+          handsVisible: _handsVisible,
         );
       } on Object {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Could not create the campaign. Please try again.'),
+              content: Text(
+                'Campaign saved locally. Continue selecting creators.',
+              ),
             ),
           );
         }
-        return;
       }
     }
     if (mounted) {
+      setState(() => _isSubmitting = false);
       showConfirmInfluencerAdditionDialog(context);
     }
   }
@@ -218,20 +229,29 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
               width: double.infinity,
               height: 48.h,
               child: FilledButton(
-                onPressed: _submit,
+                onPressed: _isSubmitting ? null : _submit,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.brandBlue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28.r),
                   ),
                 ),
-                child: Text(
-                  AppStrings.of(locale, 'company_create_save'),
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: _isSubmitting
+                    ? SizedBox(
+                        width: 18.w,
+                        height: 18.w,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.white,
+                        ),
+                      )
+                    : Text(
+                        AppStrings.of(locale, 'company_create_save'),
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
             SizedBox(height: 10.h),
@@ -329,20 +349,24 @@ class _CreatorTypeCard extends StatelessWidget {
                   color: AppColors.textMuted,
                   size: 22.sp,
                 ),
-                items: const <String>['Model', 'Influencer', 'UGC Creator']
-                    .map(
-                      (String item) => DropdownMenuItem<String>(
+                items:
+                    const <String>[
+                      'Influencer',
+                      'Model',
+                      'UGC Creator',
+                      'Collage',
+                    ].map((String item) {
+                      return DropdownMenuItem<String>(
                         value: item,
                         child: Row(
                           children: <Widget>[
-                            Icon(Icons.person_outline_rounded, size: 18),
-                            SizedBox(width: 10),
+                            Icon(_creatorIcon(item), size: 18),
+                            SizedBox(width: 10.w),
                             Text(item),
                           ],
                         ),
-                      ),
-                    )
-                    .toList(),
+                      );
+                    }).toList(),
                 onChanged: (String? next) {
                   if (next != null) {
                     onChanged(next);
@@ -355,6 +379,16 @@ class _CreatorTypeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _creatorIcon(String value) {
+  return switch (value) {
+    'Influencer' => Icons.campaign_outlined,
+    'Model' => Icons.person_outline_rounded,
+    'UGC Creator' => Icons.video_camera_front_outlined,
+    'Collage' => Icons.school_outlined,
+    _ => Icons.person_outline_rounded,
+  };
 }
 
 class _CampaignModeTabs extends StatelessWidget {

@@ -61,12 +61,14 @@ class CompanyCampaignsRepository {
       id: pick(<String>['id', 'uuid'], base.id),
       title: title,
       status: base.status,
-      coverImageUrl: ApiMedia.resolve(pick(<String>[
-        'cover_image_url',
-        'image_url',
-        'cover',
-        'image',
-      ], base.coverImageUrl)),
+      coverImageUrl: ApiMedia.resolve(
+        pick(<String>[
+          'cover_image_url',
+          'image_url',
+          'cover',
+          'image',
+        ], base.coverImageUrl),
+      ),
       statusLabelKey: base.statusLabelKey,
       deliveryDateLabel: pick(<String>[
         'delivery_date',
@@ -75,10 +77,7 @@ class CompanyCampaignsRepository {
       ], base.deliveryDateLabel),
       progressSegmentsFilled: base.progressSegmentsFilled,
       creators: base.creators,
-      brandName: pick(<String>[
-        'brand_name',
-        'company_name',
-      ], base.brandName),
+      brandName: pick(<String>['brand_name', 'company_name'], base.brandName),
       website: pick(<String>[
         'website_link',
         'website',
@@ -118,6 +117,10 @@ class CompanyCampaignsRepository {
     required String websiteLink,
     required num budgetFrom,
     required num budgetTo,
+    required String creatorType,
+    required bool faceVisible,
+    required bool hairVisible,
+    required bool handsVisible,
   }) async {
     final String url = ApiUrlResolver.resolve(ApiEndpoints.brandCampaignsPath);
     await _dio.post<dynamic>(
@@ -130,8 +133,22 @@ class CompanyCampaignsRepository {
         'website_link': websiteLink,
         'budget_from': budgetFrom,
         'budget_to': budgetTo,
+        'creator_type': _creatorTypeValue(creatorType),
+        'face_visibility': faceVisible ? 'yes' : 'no',
+        'show_hair': hairVisible ? 'yes' : 'no',
+        'hands_visibility': handsVisible ? 'yes' : 'no',
       },
     );
+  }
+
+  static String _creatorTypeValue(String label) {
+    return switch (label) {
+      'Influencer' => 'influencer',
+      'Model' => 'model',
+      'UGC Creator' => 'ugc',
+      'Collage' => 'collage',
+      _ => label.toLowerCase().replaceAll(' ', '_'),
+    };
   }
 
   static Map<String, dynamic> _extractMap(dynamic data) {
