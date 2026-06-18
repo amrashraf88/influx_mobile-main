@@ -19,14 +19,36 @@ class CompanyStarsRepository {
     final String url = ApiUrlResolver.resolve(
       ApiEndpoints.brandContentCreatorsPath,
     );
-    final Response<dynamic> res = await _dio.get<dynamic>(url);
-    return _extractList(res.data)
-        .whereType<Map<dynamic, dynamic>>()
-        .map(
-          (Map<dynamic, dynamic> e) =>
-              CompanyStarListItem.fromJson(Map<String, dynamic>.from(e)),
-        )
-        .toList();
+    final List<CompanyStarListItem> stars = <CompanyStarListItem>[];
+    final Set<String> seenIds = <String>{};
+    String? nextUrl = url;
+    int page = 1;
+
+    for (int guard = 0; guard < 200 && nextUrl != null; guard += 1) {
+      final Response<dynamic> res = await _dio.get<dynamic>(
+        nextUrl,
+        queryParameters: nextUrl == url
+            ? <String, dynamic>{'page': page, 'per_page': 100}
+            : null,
+      );
+      final _StarsPage pageResult = _StarsPage.fromResponse(res.data);
+      for (final CompanyStarListItem star in pageResult.items) {
+        final String key = star.id.isNotEmpty
+            ? star.id
+            : '${star.name}-${star.coverImageUrl}';
+        if (seenIds.add(key)) {
+          stars.add(star);
+        }
+      }
+
+      nextUrl = pageResult.nextUrl;
+      if (nextUrl == null && pageResult.nextPage != null) {
+        page = pageResult.nextPage!;
+        nextUrl = url;
+      }
+    }
+
+    return stars;
   }
 
   /// Fetches one creator's profile via `GET /brand/content-creators/{id}`.
@@ -409,5 +431,133 @@ class CompanyStarsRepository {
       }
     }
     return const <dynamic>[];
+  }
+}
+
+class _StarsPage {
+  const _StarsPage({
+    required this.items,
+    required this.nextUrl,
+    required this.nextPage,
+  });
+
+  final List<CompanyStarListItem> items;
+  final String? nextUrl;
+  final int? nextPage;
+
+  factory _StarsPage.fromResponse(dynamic data) {
+    final Map<String, dynamic>? root = data is Map
+        ? Map<String, dynamic>.from(data)
+        : null;
+    if (root == null) {
+      return _StarsPage(
+        items: CompanyStarsRepository._extractList(data)
+            .whereType<Map<dynamic, dynamic>>()
+            .map(
+              (Map<dynamic, dynamic> e) =>
+                  CompanyStarListItem.fromJson(Map<String, dynamic>.from(e)),
+            )
+            .toList(),
+        nextUrl: null,
+        nextPage: null,
+      );
+    }
+
+    final Map<String, dynamic> scope = _paginationScope(root);
+    final List<CompanyStarListItem> items =
+        CompanyStarsRepository._extractList(scope)
+            .whereType<Map<dynamic, dynamic>>()
+            .map(
+              (Map<dynamic, dynamic> e) =>
+                  CompanyStarListItem.fromJson(Map<String, dynamic>.from(e)),
+            )
+            .toList();
+
+    final Map<String, dynamic> meta = _map(scope['meta']);
+    final Map<String, dynamic> links = _map(scope['links']);
+    final int currentPage =
+        _readInt(scope['current_page']) ??
+        _readInt(meta['current_page']) ??
+        _readInt(scope['page']) ??
+        1;
+    final int? lastPage =
+        _readInt(scope['last_page']) ?? _readInt(meta['last_page']);
+    final String? nextUrl = _readUrl(
+      scope['next_page_url'] ??
+          meta['next_page_url'] ??
+          links['next'] ??
+          scope['next'],
+    );
+
+    int? nextPage = _readInt(scope['next_page']) ?? _readInt(meta['next_page']);
+    final bool hasMore =
+        nextUrl != null ||
+        _readBool(scope['has_more']) == true ||
+        _readBool(meta['has_more']) == true ||
+        (lastPage != null && currentPage < lastPage);
+    if (hasMore && nextPage == null && nextUrl == null) {
+      nextPage = currentPage + 1;
+    }
+
+    return _StarsPage(items: items, nextUrl: nextUrl, nextPage: nextPage);
+  }
+
+  static Map<String, dynamic> _paginationScope(Map<String, dynamic> root) {
+    final Object? data = root['data'];
+    if (data is Map) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(data);
+      if (_containsPagination(map) ||
+          CompanyStarsRepository._extractList(map).isNotEmpty) {
+        return map;
+      }
+    }
+    return root;
+  }
+
+  static bool _containsPagination(Map<String, dynamic> map) {
+    return map.containsKey('current_page') ||
+        map.containsKey('last_page') ||
+        map.containsKey('next_page_url') ||
+        map.containsKey('meta') ||
+        map.containsKey('links');
+  }
+
+  static Map<String, dynamic> _map(Object? value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return const <String, dynamic>{};
+  }
+
+  static int? _readInt(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  static bool? _readBool(Object? value) {
+    if (value is bool) {
+      return value;
+    }
+    final String text = value?.toString().toLowerCase().trim() ?? '';
+    if (text == 'true' || text == '1') {
+      return true;
+    }
+    if (text == 'false' || text == '0') {
+      return false;
+    }
+    return null;
+  }
+
+  static String? _readUrl(Object? value) {
+    final String text = value?.toString().trim() ?? '';
+    if (text.isEmpty || text == 'null') {
+      return null;
+    }
+    return text;
   }
 }
