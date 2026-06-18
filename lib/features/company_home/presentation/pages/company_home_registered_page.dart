@@ -411,9 +411,9 @@ class _InfluencersGrid extends StatelessWidget {
               padding: EdgeInsets.zero,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 16.h,
+                mainAxisSpacing: 14.h,
                 crossAxisSpacing: 12.w,
-                childAspectRatio: 0.62,
+                childAspectRatio: 0.68,
               ),
               itemCount: items.length,
               itemBuilder: (BuildContext context, int index) {

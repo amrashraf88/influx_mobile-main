@@ -4,8 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Card used in the company-home "Influencers" grid: cover photo + tag chip,
-/// social row at the bottom and avatar/name/handle below.
+/// Compact creator card for the brand-home Influencers grid.
 class CompanyHomeInfluencerCardWidget extends StatelessWidget {
   const CompanyHomeInfluencerCardWidget({
     super.key,
@@ -18,70 +17,89 @@ class CompanyHomeInfluencerCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16.r),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AspectRatio(
-            aspectRatio: 0.78,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  _Cover(url: influencer.coverImageUrl),
-                  Positioned(
-                    top: 8.h,
-                    left: 8.w,
-                    child: _CategoryChip(label: influencer.tagLabel),
-                  ),
-                  Positioned(
-                    left: 8.w,
-                    right: 8.w,
-                    bottom: 8.h,
-                    child: const _SocialOverlayRow(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              _Avatar(url: influencer.avatarUrl, size: 32.w),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      influencer.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      influencer.handle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9.sp,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(14.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14.r),
+        child: Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14.r),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 14,
+                offset: Offset(0, 6.h),
               ),
             ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      _Cover(url: influencer.coverImageUrl),
+                      Positioned(
+                        top: 8.h,
+                        left: 8.w,
+                        child: _CategoryChip(label: influencer.tagLabel),
+                      ),
+                      Positioned(
+                        left: 8.w,
+                        right: 8.w,
+                        bottom: 8.h,
+                        child: const _SocialOverlayRow(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  _Avatar(url: influencer.avatarUrl, size: 32.w),
+                  SizedBox(width: 7.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          influencer.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          influencer.handle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: AppColors.textSecondary,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -94,37 +112,30 @@ class _Cover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (url.isEmpty) {
-      return Container(
-        color: const Color(0xFFE5E7EB),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.image_outlined,
-          size: 36.sp,
-          color: const Color(0xFF9CA3AF),
-        ),
-      );
+    if (url.trim().isEmpty) {
+      return const _ImageFallback();
     }
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.cover,
-      placeholder: (BuildContext context, String url) => Container(
-        color: const Color(0xFFE5E7EB),
-        alignment: Alignment.center,
-        child: SizedBox(
-          width: 22.w,
-          height: 22.w,
-          child: const CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      errorWidget: (BuildContext context, String url, Object? _) => Container(
-        color: const Color(0xFFE5E7EB),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.broken_image_outlined,
-          size: 28.sp,
-          color: const Color(0xFF9CA3AF),
-        ),
+      placeholder: (_, _) => Container(color: const Color(0xFFE5E7EB)),
+      errorWidget: (_, _, _) => const _ImageFallback(),
+    );
+  }
+}
+
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFE5E7EB),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.person_outline_rounded,
+        size: 34.sp,
+        color: AppColors.textMuted,
       ),
     );
   }
@@ -142,32 +153,34 @@ class _Avatar extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: url.isEmpty
-            ? Container(
-                color: const Color(0xFFE5E7EB),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  size: size * 0.6,
-                  color: const Color(0xFF9CA3AF),
-                ),
-              )
+        child: url.trim().isEmpty
+            ? _AvatarFallback(size: size)
             : CachedNetworkImage(
                 imageUrl: url,
                 fit: BoxFit.cover,
-                placeholder: (BuildContext context, String url) =>
+                placeholder: (_, _) =>
                     Container(color: const Color(0xFFE5E7EB)),
-                errorWidget: (BuildContext context, String url, Object? _) =>
-                    Container(
-                      color: const Color(0xFFE5E7EB),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.person_outline_rounded,
-                        size: size * 0.6,
-                        color: const Color(0xFF9CA3AF),
-                      ),
-                    ),
+                errorWidget: (_, _, _) => _AvatarFallback(size: size),
               ),
+      ),
+    );
+  }
+}
+
+class _AvatarFallback extends StatelessWidget {
+  const _AvatarFallback({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFE5E7EB),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.person_outline_rounded,
+        size: size * 0.6,
+        color: AppColors.textMuted,
       ),
     );
   }
@@ -180,18 +193,22 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String text = label.trim().isEmpty ? 'Creator' : label.trim();
     return Container(
+      constraints: BoxConstraints(maxWidth: 112.w),
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: AppColors.brandBlue,
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Text(
-        label,
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: AppColors.white,
-          fontSize: 10.sp,
-          fontWeight: FontWeight.w700,
+          fontSize: 9.5.sp,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -207,9 +224,9 @@ class _SocialOverlayRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         _SocialPill(icon: Icons.play_arrow_rounded),
-        SizedBox(width: 10.w),
+        SizedBox(width: 8.w),
         _SocialPill(icon: Icons.camera_alt_outlined),
-        SizedBox(width: 10.w),
+        SizedBox(width: 8.w),
         _SocialPill(icon: Icons.music_note_rounded),
       ],
     );
@@ -224,14 +241,14 @@ class _SocialPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 30.w,
-      height: 30.w,
+      width: 28.w,
+      height: 28.w,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.37),
+        color: Colors.white.withValues(alpha: 0.42),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: AppColors.white, size: 16.sp),
+      child: Icon(icon, color: AppColors.white, size: 15.sp),
     );
   }
 }

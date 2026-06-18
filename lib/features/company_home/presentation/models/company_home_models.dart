@@ -63,14 +63,16 @@ class CompanyHomeSummary extends Equatable {
         'title',
         'name',
       ]),
-      brandLogoUrl: ApiMedia.resolve(pickString(<String>[
-        'brand_logo_url',
-        'brandLogoUrl',
-        'logo_url',
-        'logoUrl',
-        'image_url',
-        'imageUrl',
-      ])),
+      brandLogoUrl: ApiMedia.resolve(
+        pickString(<String>[
+          'brand_logo_url',
+          'brandLogoUrl',
+          'logo_url',
+          'logoUrl',
+          'image_url',
+          'imageUrl',
+        ]),
+      ),
       isUnderReview: isUnderReview,
       reviewProgress: progress,
       notificationsCount: notifications,
@@ -150,13 +152,15 @@ class CompanyHomeCampaign extends Equatable {
       id: pickString(<String>['id', 'uuid']),
       title: pickString(<String>['title', 'name', 'campaign_title']),
       status: status,
-      coverImageUrl: ApiMedia.resolve(pickString(<String>[
-        'cover_image_url',
-        'coverImageUrl',
-        'image_url',
-        'imageUrl',
-        'cover',
-      ])),
+      coverImageUrl: ApiMedia.resolve(
+        pickString(<String>[
+          'cover_image_url',
+          'coverImageUrl',
+          'image_url',
+          'imageUrl',
+          'cover',
+        ]),
+      ),
       amountValue: amount,
       dateLabel: pickString(<String>[
         'date_label',
@@ -260,26 +264,91 @@ class CompanyHomeInfluencer extends Equatable {
       return '';
     }
 
+    String pickNested(List<String> keys) {
+      final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+      for (final String objectKey in <String>[
+        'user',
+        'profile',
+        'content_creator',
+        'contentCreator',
+        'creator',
+        'media',
+        'image',
+        'avatar',
+      ]) {
+        final Object? value = json[objectKey];
+        if (value is Map) {
+          maps.add(Map<String, dynamic>.from(value));
+        }
+      }
+      for (final Map<String, dynamic> map in maps) {
+        for (final String key in keys) {
+          final Object? value = map[key];
+          if (value != null && value.toString().trim().isNotEmpty) {
+            return value.toString();
+          }
+        }
+      }
+      return '';
+    }
+
     return CompanyHomeInfluencer(
       id: pickString(<String>['id', 'uuid']),
-      name: pickString(<String>['name', 'full_name', 'display_name']),
-      handle: pickString(<String>['handle', 'username', 'user_handle']),
-      coverImageUrl: ApiMedia.resolve(pickString(<String>[
-        'cover_image_url',
-        'coverImageUrl',
-        'image_url',
-        'photo',
-      ])),
-      avatarUrl: ApiMedia.resolve(pickString(<String>[
-        'avatar_url',
-        'avatarUrl',
-        'profile_image',
-      ])),
-      tagLabel: pickString(<String>[
+      name: pickNested(<String>[
+        'name',
+        'full_name',
+        'fullName',
+        'display_name',
+        'displayName',
+      ]),
+      handle: pickNested(<String>[
+        'handle',
+        'username',
+        'user_handle',
+        'phone',
+        'mobile',
+      ]),
+      coverImageUrl: ApiMedia.resolve(
+        pickNested(<String>[
+          'cover_image_url',
+          'coverImageUrl',
+          'image_url',
+          'imageUrl',
+          'profile_photo_url',
+          'profilePhotoUrl',
+          'avatar_url',
+          'avatarUrl',
+          'url',
+          'path',
+          'cover',
+          'image',
+          'photo',
+        ]),
+      ),
+      avatarUrl: ApiMedia.resolve(
+        pickNested(<String>[
+          'avatar_url',
+          'avatarUrl',
+          'profile_image',
+          'profile_image_url',
+          'profileImageUrl',
+          'profile_photo_url',
+          'profilePhotoUrl',
+          'image_url',
+          'imageUrl',
+          'photo',
+          'url',
+          'path',
+        ]),
+      ),
+      tagLabel: pickNested(<String>[
         'tag_label',
         'tagLabel',
         'category',
         'niche',
+        'type',
+        'creator_type',
+        'creatorType',
       ]),
     );
   }
