@@ -2,53 +2,53 @@ import 'package:adzmavall/features/company_campaigns/presentation/models/company
 
 /// Local mock data for campaign screens until the backend is ready.
 abstract final class CompanyCampaignsViewData {
-  static const List<CompanyCampaignListItem> campaigns =
-      <CompanyCampaignListItem>[
-        CompanyCampaignListItem(
-          id: 'cmp-1',
-          title: 'help the cild to go school',
-          status: CompanyCampaignListStatus.completed,
-          coverImageUrl:
-              'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=900&q=80',
-          amountValue: 17600,
-          dateLabel: '20December,2025',
-          code: '#12345',
-          progressSegmentsFilled: 4,
-        ),
-        CompanyCampaignListItem(
-          id: 'cmp-2',
-          title: 'help the cild to go school',
-          status: CompanyCampaignListStatus.newPendingApproval,
-          coverImageUrl:
-              'https://images.unsplash.com/photo-1604881991720-f91add269bed?auto=format&fit=crop&w=900&q=80',
-          amountValue: 17600,
-          dateLabel: '20December,2025',
-          code: '#12346',
-          progressSegmentsFilled: 1,
-        ),
-        CompanyCampaignListItem(
-          id: 'cmp-3',
-          title: 'help the cild to go school',
-          status: CompanyCampaignListStatus.cancelled,
-          coverImageUrl:
-              'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
-          amountValue: 17600,
-          dateLabel: '20December,2025',
-          code: '#12347',
-          progressSegmentsFilled: 4,
-        ),
-        CompanyCampaignListItem(
-          id: 'cmp-4',
-          title: 'help the cild to go school',
-          status: CompanyCampaignListStatus.pendingClientReview,
-          coverImageUrl:
-              'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=80',
-          amountValue: 17600,
-          dateLabel: '20December,2025',
-          code: '#12348',
-          progressSegmentsFilled: 3,
-        ),
-      ];
+  static const List<CompanyCampaignListItem>
+  campaigns = <CompanyCampaignListItem>[
+    CompanyCampaignListItem(
+      id: 'cmp-1',
+      title: 'Help the child go to school',
+      status: CompanyCampaignListStatus.completed,
+      coverImageUrl:
+          'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=900&q=80',
+      amountValue: 17600,
+      dateLabel: '3 influencers',
+      code: '#12345',
+      progressSegmentsFilled: 4,
+    ),
+    CompanyCampaignListItem(
+      id: 'cmp-2',
+      title: 'New Style Drop SS26',
+      status: CompanyCampaignListStatus.newPendingApproval,
+      coverImageUrl:
+          'https://images.unsplash.com/photo-1604881991720-f91add269bed?auto=format&fit=crop&w=900&q=80',
+      amountValue: 9200,
+      dateLabel: '2 influencers',
+      code: '#12346',
+      progressSegmentsFilled: 1,
+    ),
+    CompanyCampaignListItem(
+      id: 'cmp-3',
+      title: 'help the cild to go school',
+      status: CompanyCampaignListStatus.cancelled,
+      coverImageUrl:
+          'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
+      amountValue: 17600,
+      dateLabel: '20December,2025',
+      code: '#12347',
+      progressSegmentsFilled: 4,
+    ),
+    CompanyCampaignListItem(
+      id: 'cmp-4',
+      title: 'help the cild to go school',
+      status: CompanyCampaignListStatus.pendingClientReview,
+      coverImageUrl:
+          'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=80',
+      amountValue: 17600,
+      dateLabel: '20December,2025',
+      code: '#12348',
+      progressSegmentsFilled: 3,
+    ),
+  ];
 
   static const List<String> platformOptions = <String>[
     'Instagram',
@@ -59,27 +59,27 @@ abstract final class CompanyCampaignsViewData {
     'Threads',
   ];
 
-  static const List<CompanyCampaignCreatorSummary> _defaultCreators =
-      <CompanyCampaignCreatorSummary>[
-        CompanyCampaignCreatorSummary(
-          id: 'inf-saif',
-          name: 'Saif Mohamed',
-          avatarUrl:
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-          status: CompanyCampaignListStatus.completed,
-          priceLabel: '17,600\$',
-          platforms: <String>['youtube', 'tiktok', 'facebook'],
-        ),
-        CompanyCampaignCreatorSummary(
-          id: 'inf-2',
-          name: 'Saif Mohamed',
-          avatarUrl:
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-          status: CompanyCampaignListStatus.pendingClientReview,
-          priceLabel: '17,600\$',
-          platforms: <String>['youtube', 'tiktok', 'facebook'],
-        ),
-      ];
+  static const List<CompanyCampaignCreatorSummary>
+  _defaultCreators = <CompanyCampaignCreatorSummary>[
+    CompanyCampaignCreatorSummary(
+      id: 'inf-saif',
+      name: 'Saif Mohamed',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      status: CompanyCampaignListStatus.completed,
+      priceLabel: '17,600\$',
+      platforms: <String>['youtube', 'tiktok', 'facebook'],
+    ),
+    CompanyCampaignCreatorSummary(
+      id: 'inf-2',
+      name: 'Saif Mohamed',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+      status: CompanyCampaignListStatus.pendingClientReview,
+      priceLabel: '17,600\$',
+      platforms: <String>['youtube', 'tiktok', 'facebook'],
+    ),
+  ];
 
   static CompanyCampaignListItem? campaignById(String id) {
     for (final CompanyCampaignListItem c in campaigns) {

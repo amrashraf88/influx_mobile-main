@@ -31,6 +31,10 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
   final TextEditingController _delivery = TextEditingController();
   final TextEditingController _details = TextEditingController();
 
+  bool _faceVisible = true;
+  bool _hairVisible = true;
+  bool _handsVisible = true;
+  String _creatorType = 'Model';
   String? _followers;
   String? _ageGroup;
 
@@ -92,6 +96,25 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
         padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
         child: Column(
           children: <Widget>[
+            _CreatorTypeCard(
+              value: _creatorType,
+              onChanged: (String value) => setState(() => _creatorType = value),
+            ),
+            SizedBox(height: 14.h),
+            const _CampaignModeTabs(),
+            SizedBox(height: 14.h),
+            _PhotoShootDetailsCard(
+              faceVisible: _faceVisible,
+              hairVisible: _hairVisible,
+              handsVisible: _handsVisible,
+              onFaceChanged: (bool value) =>
+                  setState(() => _faceVisible = value),
+              onHairChanged: (bool value) =>
+                  setState(() => _hairVisible = value),
+              onHandsChanged: (bool value) =>
+                  setState(() => _handsVisible = value),
+            ),
+            SizedBox(height: 14.h),
             ProfileSectionCard(
               title: '',
               children: <Widget>[
@@ -108,10 +131,7 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
                 ),
                 SizedBox(height: 12.h),
                 CompanyCampaignFormField(
-                  label: AppStrings.of(
-                    locale,
-                    'company_campaign_title_field',
-                  ),
+                  label: AppStrings.of(locale, 'company_campaign_title_field'),
                   controller: _title,
                   hint: AppStrings.of(locale, 'company_create_hint_title'),
                 ),
@@ -128,10 +148,7 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
                 ),
                 SizedBox(height: 12.h),
                 ProfileSelectField(
-                  label: AppStrings.of(
-                    locale,
-                    'company_campaign_target_age',
-                  ),
+                  label: AppStrings.of(locale, 'company_campaign_target_age'),
                   hint: AppStrings.of(locale, 'company_create_select'),
                   value: _ageGroup,
                   items: selectItems,
@@ -242,6 +259,283 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
             SizedBox(height: 12.h),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CreatorTypeCard extends StatelessWidget {
+  const _CreatorTypeCard({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 18,
+            offset: Offset(0, 7.h),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Creator Type',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'The campaign form adapts to the creator.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 11.sp),
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            'Select Creator',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Container(
+            height: 48.h,
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F8FA),
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: const Color(0xFFE7EAF0)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isExpanded: true,
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.textMuted,
+                  size: 22.sp,
+                ),
+                items: const <String>['Model', 'Influencer', 'UGC Creator']
+                    .map(
+                      (String item) => DropdownMenuItem<String>(
+                        value: item,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(Icons.person_outline_rounded, size: 18),
+                            SizedBox(width: 10),
+                            Text(item),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (String? next) {
+                  if (next != null) {
+                    onChanged(next);
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CampaignModeTabs extends StatelessWidget {
+  const _CampaignModeTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _ModeTab(
+            label: 'Campaign Type',
+            icon: Icons.add_circle_outline_rounded,
+            selected: false,
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: _ModeTab(
+            label: 'Photo Shoot Details',
+            icon: Icons.grid_view_rounded,
+            selected: true,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.label,
+    required this.icon,
+    required this.selected,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 42.h,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected ? AppColors.brandBlue : AppColors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: Offset(0, 5.h),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            icon,
+            size: 16.sp,
+            color: selected ? AppColors.white : AppColors.textMuted,
+          ),
+          SizedBox(width: 7.w),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selected ? AppColors.white : AppColors.textMuted,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotoShootDetailsCard extends StatelessWidget {
+  const _PhotoShootDetailsCard({
+    required this.faceVisible,
+    required this.hairVisible,
+    required this.handsVisible,
+    required this.onFaceChanged,
+    required this.onHairChanged,
+    required this.onHandsChanged,
+  });
+
+  final bool faceVisible;
+  final bool hairVisible;
+  final bool handsVisible;
+  final ValueChanged<bool> onFaceChanged;
+  final ValueChanged<bool> onHairChanged;
+  final ValueChanged<bool> onHandsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 18,
+            offset: Offset(0, 7.h),
+          ),
+        ],
+      ),
+      child: Column(
+        children: <Widget>[
+          _VisibilitySwitchRow(
+            label: 'Face Visible',
+            value: faceVisible,
+            onChanged: onFaceChanged,
+          ),
+          _VisibilitySwitchRow(
+            label: 'Hair Visible',
+            value: hairVisible,
+            onChanged: onHairChanged,
+          ),
+          _VisibilitySwitchRow(
+            label: 'Hands Visible',
+            value: handsVisible,
+            onChanged: onHandsChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VisibilitySwitchRow extends StatelessWidget {
+  const _VisibilitySwitchRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52.h,
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F9FC),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.white,
+            activeTrackColor: AppColors.brandBlue,
+            inactiveThumbColor: AppColors.white,
+            inactiveTrackColor: const Color(0xFFD9DEE8),
+          ),
+        ],
       ),
     );
   }

@@ -21,9 +21,6 @@ class CompanyCampaignsPage extends StatefulWidget {
 }
 
 class _CompanyCampaignsPageState extends State<CompanyCampaignsPage> {
-  CompanyCampaignFilter _filter = CompanyCampaignFilter.all;
-  final TextEditingController _search = TextEditingController();
-
   List<CompanyCampaignListItem> _campaigns = CompanyCampaignsViewData.campaigns;
 
   @override
@@ -48,24 +45,8 @@ class _CompanyCampaignsPageState extends State<CompanyCampaignsPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
   List<CompanyCampaignListItem> get _visible {
-    final String q = _search.text.trim().toLowerCase();
-    return _campaigns.where((CompanyCampaignListItem c) {
-      if (!CompanyCampaignsViewData.matchesFilter(c, _filter)) {
-        return false;
-      }
-      if (q.isEmpty) {
-        return true;
-      }
-      return c.title.toLowerCase().contains(q) ||
-          c.code.toLowerCase().contains(q);
-    }).toList();
+    return _campaigns;
   }
 
   @override
@@ -85,7 +66,7 @@ class _CompanyCampaignsPageState extends State<CompanyCampaignsPage> {
                     child: Text(
                       AppStrings.of(locale, 'company_campaigns_title'),
                       style: TextStyle(
-                        fontSize: 28.sp,
+                        fontSize: 21.sp,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
                       ),
@@ -99,12 +80,28 @@ class _CompanyCampaignsPageState extends State<CompanyCampaignsPage> {
                           context.push(RouteNames.companyCreateCampaign),
                       borderRadius: BorderRadius.circular(12.r),
                       child: SizedBox(
-                        width: 44.w,
-                        height: 44.w,
-                        child: Icon(
-                          Icons.add_rounded,
-                          color: AppColors.white,
-                          size: 26.sp,
+                        height: 36.h,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 13.w),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(
+                                Icons.add_rounded,
+                                color: AppColors.white,
+                                size: 18.sp,
+                              ),
+                              SizedBox(width: 5.w),
+                              Text(
+                                'New',
+                                style: TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -112,66 +109,7 @@ class _CompanyCampaignsPageState extends State<CompanyCampaignsPage> {
                 ],
               ),
             ),
-            SizedBox(height: 14.h),
-            SizedBox(
-              height: 40.h,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                children: _filterChips(locale),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: TextField(
-                      controller: _search,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        hintText: AppStrings.of(
-                          locale,
-                          'company_home_search_hint',
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          size: 22.sp,
-                          color: AppColors.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.white,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12.h),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28.r),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Material(
-                    color: AppColors.brandBlue,
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: InkWell(
-                      onTap: () {},
-                      borderRadius: BorderRadius.circular(12.r),
-                      child: SizedBox(
-                        width: 48.w,
-                        height: 48.h,
-                        child: Icon(
-                          Icons.tune_rounded,
-                          color: AppColors.white,
-                          size: 22.sp,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 14.h),
+            SizedBox(height: 18.h),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
@@ -191,43 +129,5 @@ class _CompanyCampaignsPageState extends State<CompanyCampaignsPage> {
         ),
       ),
     );
-  }
-
-  List<Widget> _filterChips(Locale locale) {
-    final List<(CompanyCampaignFilter, String)> items =
-        <(CompanyCampaignFilter, String)>[
-      (CompanyCampaignFilter.all, 'company_campaign_filter_all'),
-      (CompanyCampaignFilter.completed, 'company_campaign_filter_completed'),
-      (CompanyCampaignFilter.cancelled, 'company_campaign_filter_cancelled'),
-      (CompanyCampaignFilter.newPending, 'company_campaign_filter_new'),
-      (
-        CompanyCampaignFilter.pendingClientReview,
-        'company_campaign_filter_pending',
-      ),
-    ];
-    return items.map(((CompanyCampaignFilter, String) e) {
-      final bool selected = _filter == e.$1;
-      return Padding(
-        padding: EdgeInsets.only(right: 8.w),
-        child: ChoiceChip(
-          label: Text(AppStrings.of(locale, e.$2)),
-          selected: selected,
-          onSelected: (_) => setState(() => _filter = e.$1),
-          selectedColor: AppColors.brandBlue,
-          backgroundColor: AppColors.white,
-          labelStyle: TextStyle(
-            color: selected ? AppColors.white : AppColors.textSecondary,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
-          side: BorderSide(
-            color: selected ? AppColors.brandBlue : const Color(0xFFE1E5EC),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24.r),
-          ),
-        ),
-      );
-    }).toList();
   }
 }
