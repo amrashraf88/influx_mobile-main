@@ -17,6 +17,9 @@ class CompanyHomeInfluencerCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String creatorLabel = _creatorTypeLabel(influencer.creatorTypeValue);
+    final String metaLabel = _cleanTag(influencer);
+    final String handle = influencer.handle.trim();
     return Material(
       color: AppColors.white,
       borderRadius: BorderRadius.circular(14.r),
@@ -24,8 +27,9 @@ class CompanyHomeInfluencerCardWidget extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14.r),
         child: Container(
-          padding: EdgeInsets.all(8.w),
+          padding: EdgeInsets.all(9.w),
           decoration: BoxDecoration(
+            color: AppColors.white,
             borderRadius: BorderRadius.circular(14.r),
             boxShadow: <BoxShadow>[
               BoxShadow(
@@ -48,55 +52,79 @@ class CompanyHomeInfluencerCardWidget extends StatelessWidget {
                       Positioned(
                         top: 8.h,
                         left: 8.w,
-                        child: _CategoryChip(label: influencer.tagLabel),
-                      ),
-                      Positioned(
-                        left: 8.w,
-                        right: 8.w,
-                        bottom: 8.h,
-                        child: const _SocialOverlayRow(),
+                        child: _CategoryChip(
+                          label: creatorLabel,
+                          colors: _creatorGradient(influencer.creatorTypeValue),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
               SizedBox(height: 8.h),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  _Avatar(url: influencer.avatarUrl, size: 32.w),
-                  SizedBox(width: 7.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          influencer.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
-                            height: 1.1,
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 2.w),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    _Avatar(url: influencer.avatarUrl, size: 30.w),
+                    SizedBox(width: 7.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            influencer.name.trim().isEmpty
+                                ? 'Creator'
+                                : influencer.name.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              height: 1.12,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          influencer.handle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: AppColors.textSecondary,
-                            height: 1.1,
+                          SizedBox(height: 3.h),
+                          Text(
+                            handle.isEmpty ? metaLabel : handle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9.5.sp,
+                              color: AppColors.textSecondary,
+                              height: 1.1,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (metaLabel.isNotEmpty && handle.isNotEmpty) ...<Widget>[
+                SizedBox(height: 7.h),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F9FF),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    metaLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ],
           ),
         ),
@@ -187,9 +215,10 @@ class _AvatarFallback extends StatelessWidget {
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.label});
+  const _CategoryChip({required this.label, required this.colors});
 
   final String label;
+  final List<Color> colors;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +227,7 @@ class _CategoryChip extends StatelessWidget {
       constraints: BoxConstraints(maxWidth: 112.w),
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: AppColors.brandBlue,
+        gradient: LinearGradient(colors: colors),
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Text(
@@ -215,40 +244,30 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _SocialOverlayRow extends StatelessWidget {
-  const _SocialOverlayRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        _SocialPill(icon: Icons.play_arrow_rounded),
-        SizedBox(width: 8.w),
-        _SocialPill(icon: Icons.camera_alt_outlined),
-        SizedBox(width: 8.w),
-        _SocialPill(icon: Icons.music_note_rounded),
-      ],
-    );
-  }
+String _creatorTypeLabel(String value) {
+  return switch (value) {
+    'model' => 'Model',
+    'ugc' => 'UGC',
+    'collage' => 'Collage',
+    _ => 'Influencer',
+  };
 }
 
-class _SocialPill extends StatelessWidget {
-  const _SocialPill({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28.w,
-      height: 28.w,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.42),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: AppColors.white, size: 15.sp),
-    );
+String _cleanTag(CompanyHomeInfluencer influencer) {
+  final String tag = influencer.tagLabel.trim();
+  if (tag.isEmpty ||
+      tag.startsWith('{') ||
+      tag.toLowerCase().contains('value:')) {
+    return _creatorTypeLabel(influencer.creatorTypeValue);
   }
+  return tag;
+}
+
+List<Color> _creatorGradient(String value) {
+  return switch (value) {
+    'model' => AppColors.modelGradient,
+    'ugc' => AppColors.ugcGradient,
+    'collage' => AppColors.collageGradient,
+    _ => AppColors.influencerGradient,
+  };
 }

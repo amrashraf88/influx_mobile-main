@@ -244,6 +244,7 @@ class CompanyHomeInfluencer extends Equatable {
     required this.coverImageUrl,
     required this.avatarUrl,
     required this.tagLabel,
+    this.creatorTypeValue = 'influencer',
   });
 
   final String id;
@@ -252,6 +253,7 @@ class CompanyHomeInfluencer extends Equatable {
   final String coverImageUrl;
   final String avatarUrl;
   final String tagLabel;
+  final String creatorTypeValue;
 
   factory CompanyHomeInfluencer.fromJson(Map<String, dynamic> json) {
     String pickString(List<String> keys) {
@@ -290,6 +292,26 @@ class CompanyHomeInfluencer extends Equatable {
         }
       }
       return '';
+    }
+
+    String pickCreatorTypeValue() {
+      final String value = pickNested(<String>[
+        'creator_type',
+        'creatorType',
+        'type',
+        'category',
+      ]);
+      final String lower = value.trim().toLowerCase();
+      if (lower.contains('ugc') || lower.contains('user generated')) {
+        return 'ugc';
+      }
+      if (lower.contains('collage') || lower.contains('college')) {
+        return 'collage';
+      }
+      if (lower.contains('model')) {
+        return 'model';
+      }
+      return 'influencer';
     }
 
     return CompanyHomeInfluencer(
@@ -346,10 +368,8 @@ class CompanyHomeInfluencer extends Equatable {
         'tagLabel',
         'category',
         'niche',
-        'type',
-        'creator_type',
-        'creatorType',
       ]),
+      creatorTypeValue: pickCreatorTypeValue(),
     );
   }
 
@@ -361,6 +381,7 @@ class CompanyHomeInfluencer extends Equatable {
     coverImageUrl,
     avatarUrl,
     tagLabel,
+    creatorTypeValue,
   ];
 }
 
