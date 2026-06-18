@@ -30,10 +30,25 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
   final TextEditingController _budgetMax = TextEditingController();
   final TextEditingController _delivery = TextEditingController();
   final TextEditingController _details = TextEditingController();
+  final TextEditingController _campaignType = TextEditingController();
+  final TextEditingController _contentBrief = TextEditingController();
+  final TextEditingController _modelHeight = TextEditingController();
+  final TextEditingController _modelWeight = TextEditingController();
+  final TextEditingController _modelSize = TextEditingController();
+  final TextEditingController _modelDistrict = TextEditingController();
+  final TextEditingController _ugcVideoPrice = TextEditingController();
+  final TextEditingController _ugcDeliveryTime = TextEditingController();
+  final TextEditingController _collageDistrict = TextEditingController();
+  final TextEditingController _collagePricePerSecond = TextEditingController();
+  final TextEditingController _collageAccent = TextEditingController();
+  final TextEditingController _collageDirections = TextEditingController();
 
   bool _faceVisible = true;
   bool _hairVisible = true;
   bool _handsVisible = true;
+  bool _fullBodyVisible = true;
+  bool _voiceOver = true;
+  bool _useHook = true;
   String _creatorType = 'Model';
   bool _isSubmitting = false;
   String? _followers;
@@ -48,7 +63,54 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
     _budgetMax.dispose();
     _delivery.dispose();
     _details.dispose();
+    _campaignType.dispose();
+    _contentBrief.dispose();
+    _modelHeight.dispose();
+    _modelWeight.dispose();
+    _modelSize.dispose();
+    _modelDistrict.dispose();
+    _ugcVideoPrice.dispose();
+    _ugcDeliveryTime.dispose();
+    _collageDistrict.dispose();
+    _collagePricePerSecond.dispose();
+    _collageAccent.dispose();
+    _collageDirections.dispose();
     super.dispose();
+  }
+
+  Map<String, dynamic> _creatorExtraPayload() {
+    final Map<String, dynamic> common = <String, dynamic>{
+      'campaign_type': _campaignType.text.trim(),
+      'content_brief': _contentBrief.text.trim(),
+    };
+
+    return switch (_creatorType) {
+      'Model' => <String, dynamic>{
+        ...common,
+        'height_cm': _modelHeight.text.trim(),
+        'weight_kg': _modelWeight.text.trim(),
+        'model_size': _modelSize.text.trim(),
+        'district': _modelDistrict.text.trim(),
+        'body_visibility': _fullBodyVisible ? 'yes' : 'no',
+      },
+      'UGC Creator' => <String, dynamic>{
+        ...common,
+        'video_price': _ugcVideoPrice.text.trim(),
+        'delivery_time_from_arrival': _ugcDeliveryTime.text.trim(),
+        'voice_over': _voiceOver ? 'yes' : 'no',
+        'use_hook': _useHook ? 'yes' : 'no',
+      },
+      'Collage' => <String, dynamic>{
+        ...common,
+        'street': _collageDistrict.text.trim(),
+        'price_per_second': _collagePricePerSecond.text.trim(),
+        'accent': _collageAccent.text.trim(),
+        'directions': _collageDirections.text.trim(),
+        'voice_over': _voiceOver ? 'yes' : 'no',
+        'use_hook': _useHook ? 'yes' : 'no',
+      },
+      _ => common,
+    };
   }
 
   Future<void> _submit() async {
@@ -70,6 +132,7 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
           faceVisible: _faceVisible,
           hairVisible: _hairVisible,
           handsVisible: _handsVisible,
+          extraFields: _creatorExtraPayload(),
         );
       } on Object {
         if (mounted) {
@@ -112,18 +175,38 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
               onChanged: (String value) => setState(() => _creatorType = value),
             ),
             SizedBox(height: 14.h),
-            const _CampaignModeTabs(),
-            SizedBox(height: 14.h),
-            _PhotoShootDetailsCard(
+            _CreatorDynamicSection(
+              creatorType: _creatorType,
+              campaignType: _campaignType,
+              contentBrief: _contentBrief,
+              modelHeight: _modelHeight,
+              modelWeight: _modelWeight,
+              modelSize: _modelSize,
+              modelDistrict: _modelDistrict,
+              ugcVideoPrice: _ugcVideoPrice,
+              ugcDeliveryTime: _ugcDeliveryTime,
+              collageDistrict: _collageDistrict,
+              collagePricePerSecond: _collagePricePerSecond,
+              collageAccent: _collageAccent,
+              collageDirections: _collageDirections,
               faceVisible: _faceVisible,
               hairVisible: _hairVisible,
               handsVisible: _handsVisible,
+              fullBodyVisible: _fullBodyVisible,
+              voiceOver: _voiceOver,
+              useHook: _useHook,
               onFaceChanged: (bool value) =>
                   setState(() => _faceVisible = value),
               onHairChanged: (bool value) =>
                   setState(() => _hairVisible = value),
               onHandsChanged: (bool value) =>
                   setState(() => _handsVisible = value),
+              onFullBodyChanged: (bool value) =>
+                  setState(() => _fullBodyVisible = value),
+              onVoiceOverChanged: (bool value) =>
+                  setState(() => _voiceOver = value),
+              onUseHookChanged: (bool value) =>
+                  setState(() => _useHook = value),
             ),
             SizedBox(height: 14.h),
             ProfileSectionCard(
@@ -392,7 +475,13 @@ IconData _creatorIcon(String value) {
 }
 
 class _CampaignModeTabs extends StatelessWidget {
-  const _CampaignModeTabs();
+  const _CampaignModeTabs({
+    required this.secondaryLabel,
+    required this.secondaryIcon,
+  });
+
+  final String secondaryLabel;
+  final IconData secondaryIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -408,8 +497,8 @@ class _CampaignModeTabs extends StatelessWidget {
         SizedBox(width: 8.w),
         Expanded(
           child: _ModeTab(
-            label: 'Photo Shoot Details',
-            icon: Icons.grid_view_rounded,
+            label: secondaryLabel,
+            icon: secondaryIcon,
             selected: true,
           ),
         ),
@@ -472,28 +561,322 @@ class _ModeTab extends StatelessWidget {
   }
 }
 
-class _PhotoShootDetailsCard extends StatelessWidget {
-  const _PhotoShootDetailsCard({
+class _CreatorDynamicSection extends StatelessWidget {
+  const _CreatorDynamicSection({
+    required this.creatorType,
+    required this.campaignType,
+    required this.contentBrief,
+    required this.modelHeight,
+    required this.modelWeight,
+    required this.modelSize,
+    required this.modelDistrict,
+    required this.ugcVideoPrice,
+    required this.ugcDeliveryTime,
+    required this.collageDistrict,
+    required this.collagePricePerSecond,
+    required this.collageAccent,
+    required this.collageDirections,
     required this.faceVisible,
     required this.hairVisible,
     required this.handsVisible,
+    required this.fullBodyVisible,
+    required this.voiceOver,
+    required this.useHook,
     required this.onFaceChanged,
     required this.onHairChanged,
     required this.onHandsChanged,
+    required this.onFullBodyChanged,
+    required this.onVoiceOverChanged,
+    required this.onUseHookChanged,
   });
 
+  final String creatorType;
+  final TextEditingController campaignType;
+  final TextEditingController contentBrief;
+  final TextEditingController modelHeight;
+  final TextEditingController modelWeight;
+  final TextEditingController modelSize;
+  final TextEditingController modelDistrict;
+  final TextEditingController ugcVideoPrice;
+  final TextEditingController ugcDeliveryTime;
+  final TextEditingController collageDistrict;
+  final TextEditingController collagePricePerSecond;
+  final TextEditingController collageAccent;
+  final TextEditingController collageDirections;
   final bool faceVisible;
   final bool hairVisible;
   final bool handsVisible;
+  final bool fullBodyVisible;
+  final bool voiceOver;
+  final bool useHook;
   final ValueChanged<bool> onFaceChanged;
   final ValueChanged<bool> onHairChanged;
   final ValueChanged<bool> onHandsChanged;
+  final ValueChanged<bool> onFullBodyChanged;
+  final ValueChanged<bool> onVoiceOverChanged;
+  final ValueChanged<bool> onUseHookChanged;
+
+  String get _secondaryLabel {
+    return switch (creatorType) {
+      'Influencer' => 'Influencer Brief',
+      'UGC Creator' => 'UGC Details',
+      'Collage' => 'Collage Details',
+      _ => 'Photo Shoot Details',
+    };
+  }
+
+  IconData get _secondaryIcon {
+    return switch (creatorType) {
+      'Influencer' => Icons.campaign_outlined,
+      'UGC Creator' => Icons.video_camera_front_outlined,
+      'Collage' => Icons.school_outlined,
+      _ => Icons.grid_view_rounded,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        _CampaignModeTabs(
+          secondaryLabel: _secondaryLabel,
+          secondaryIcon: _secondaryIcon,
+        ),
+        SizedBox(height: 14.h),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _DetailsCard(
+            key: ValueKey<String>(creatorType),
+            children: switch (creatorType) {
+              'Influencer' => _influencerFields(),
+              'UGC Creator' => _ugcFields(),
+              'Collage' => _collageFields(),
+              _ => _modelFields(),
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _briefFields({required String campaignHint}) {
+    return <Widget>[
+      CompanyCampaignFormField(
+        label: 'Campaign Type',
+        controller: campaignType,
+        hint: campaignHint,
+        prefixIcon: Icons.add_circle_outline_rounded,
+      ),
+      SizedBox(height: 12.h),
+      CompanyCampaignFormField(
+        label: 'Content Brief',
+        controller: contentBrief,
+        hint: 'Write the required content details',
+        hidePrefixIcon: true,
+        maxLines: 3,
+      ),
+    ];
+  }
+
+  List<Widget> _influencerFields() {
+    return <Widget>[
+      ..._briefFields(campaignHint: 'Story / Reel / Post'),
+      SizedBox(height: 12.h),
+      _VisibilitySwitchRow(
+        label: 'Use Hook',
+        value: useHook,
+        onChanged: onUseHookChanged,
+      ),
+    ];
+  }
+
+  List<Widget> _modelFields() {
+    return <Widget>[
+      _VisibilitySwitchRow(
+        label: 'Face Visible',
+        value: faceVisible,
+        onChanged: onFaceChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Hair Visible',
+        value: hairVisible,
+        onChanged: onHairChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Hands Visible',
+        value: handsVisible,
+        onChanged: onHandsChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Full Body Visible',
+        value: fullBodyVisible,
+        onChanged: onFullBodyChanged,
+      ),
+      SizedBox(height: 2.h),
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'Height',
+              controller: modelHeight,
+              hint: '170 cm',
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.height_rounded,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'Weight',
+              controller: modelWeight,
+              hint: '60 kg',
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.monitor_weight_outlined,
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: 12.h),
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'Size',
+              controller: modelSize,
+              hint: 'M / 38',
+              prefixIcon: Icons.straighten_rounded,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'District',
+              controller: modelDistrict,
+              hint: 'Riyadh',
+              prefixIcon: Icons.location_on_outlined,
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _ugcFields() {
+    return <Widget>[
+      ..._briefFields(campaignHint: 'UGC Video / Review / Unboxing'),
+      SizedBox(height: 12.h),
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'Video Price',
+              controller: ugcVideoPrice,
+              hint: '1500 SAR',
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.payments_outlined,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'Delivery Time',
+              controller: ugcDeliveryTime,
+              hint: '3 days',
+              prefixIcon: Icons.schedule_rounded,
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: 12.h),
+      _VisibilitySwitchRow(
+        label: 'Voice Over',
+        value: voiceOver,
+        onChanged: onVoiceOverChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Use Hook',
+        value: useHook,
+        onChanged: onUseHookChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Face Visible',
+        value: faceVisible,
+        onChanged: onFaceChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Hair Visible',
+        value: hairVisible,
+        onChanged: onHairChanged,
+      ),
+    ];
+  }
+
+  List<Widget> _collageFields() {
+    return <Widget>[
+      ..._briefFields(campaignHint: 'College activation / Campus content'),
+      SizedBox(height: 12.h),
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'District',
+              controller: collageDistrict,
+              hint: 'Campus / city',
+              prefixIcon: Icons.location_on_outlined,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: CompanyCampaignFormField(
+              label: 'Price / second',
+              controller: collagePricePerSecond,
+              hint: '50 SAR',
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.payments_outlined,
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: 12.h),
+      CompanyCampaignFormField(
+        label: 'Accent',
+        controller: collageAccent,
+        hint: 'Saudi / Gulf / Neutral',
+        prefixIcon: Icons.record_voice_over_outlined,
+      ),
+      SizedBox(height: 12.h),
+      CompanyCampaignFormField(
+        label: 'Directions',
+        controller: collageDirections,
+        hint: 'Write location and shooting directions',
+        hidePrefixIcon: true,
+        maxLines: 3,
+      ),
+      SizedBox(height: 12.h),
+      _VisibilitySwitchRow(
+        label: 'Voice Over',
+        value: voiceOver,
+        onChanged: onVoiceOverChanged,
+      ),
+      _VisibilitySwitchRow(
+        label: 'Use Hook',
+        value: useHook,
+        onChanged: onUseHookChanged,
+      ),
+    ];
+  }
+}
+
+class _DetailsCard extends StatelessWidget {
+  const _DetailsCard({super.key, required this.children});
+
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 6.h),
+      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 14.h),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(14.r),
@@ -505,25 +888,7 @@ class _PhotoShootDetailsCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: <Widget>[
-          _VisibilitySwitchRow(
-            label: 'Face Visible',
-            value: faceVisible,
-            onChanged: onFaceChanged,
-          ),
-          _VisibilitySwitchRow(
-            label: 'Hair Visible',
-            value: hairVisible,
-            onChanged: onHairChanged,
-          ),
-          _VisibilitySwitchRow(
-            label: 'Hands Visible',
-            value: handsVisible,
-            onChanged: onHandsChanged,
-          ),
-        ],
-      ),
+      child: Column(children: children),
     );
   }
 }

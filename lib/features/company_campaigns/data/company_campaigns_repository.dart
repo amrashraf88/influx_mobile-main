@@ -121,6 +121,7 @@ class CompanyCampaignsRepository {
     required bool faceVisible,
     required bool hairVisible,
     required bool handsVisible,
+    Map<String, dynamic> extraFields = const <String, dynamic>{},
   }) async {
     final String url = ApiUrlResolver.resolve(ApiEndpoints.brandCampaignsPath);
     await _dio.post<dynamic>(
@@ -137,6 +138,7 @@ class CompanyCampaignsRepository {
         'face_visibility': faceVisible ? 'yes' : 'no',
         'show_hair': hairVisible ? 'yes' : 'no',
         'hands_visibility': handsVisible ? 'yes' : 'no',
+        ...extraFields,
       },
     );
   }
