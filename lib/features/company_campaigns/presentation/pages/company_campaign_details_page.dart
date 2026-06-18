@@ -15,7 +15,6 @@ import 'package:adzmavall/features/company_campaigns/presentation/widgets/compan
 import 'package:adzmavall/features/profile/presentation/widgets/profile_form_widgets.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:adzmavall/utils/imageassets.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -31,7 +30,8 @@ class CompanyCampaignDetailsPage extends StatefulWidget {
       _CompanyCampaignDetailsPageState();
 }
 
-class _CompanyCampaignDetailsPageState extends State<CompanyCampaignDetailsPage> {
+class _CompanyCampaignDetailsPageState
+    extends State<CompanyCampaignDetailsPage> {
   late CompanyCampaignDetail _detail;
   late Set<String> _selectedPlatforms;
 
@@ -48,10 +48,9 @@ class _CompanyCampaignDetailsPageState extends State<CompanyCampaignDetailsPage>
       return;
     }
     try {
-      final CompanyCampaignDetail detail =
-          await CompanyCampaignsRepository(
-            DioClient.instance,
-          ).fetchCampaignDetail(widget.campaignId);
+      final CompanyCampaignDetail detail = await CompanyCampaignsRepository(
+        DioClient.instance,
+      ).fetchCampaignDetail(widget.campaignId);
       if (!mounted) {
         return;
       }
@@ -82,19 +81,8 @@ class _CompanyCampaignDetailsPageState extends State<CompanyCampaignDetailsPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: SizedBox(
-                height: 200.h,
-                child: CachedNetworkImage(
-                  imageUrl: _detail.coverImageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (_, _) =>
-                      Container(color: const Color(0xFFE5E7EB)),
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
+            _CampaignHeroSummary(detail: _detail),
+            SizedBox(height: 14.h),
             _CampaignStatusSection(
               status: _detail.status,
               statusLabelKey: _detail.statusLabelKey,
@@ -141,10 +129,7 @@ class _CompanyCampaignDetailsPageState extends State<CompanyCampaignDetailsPage>
                 ),
                 SizedBox(height: 12.h),
                 CompanyCampaignFormField(
-                  label: AppStrings.of(
-                    locale,
-                    'company_campaign_title_field',
-                  ),
+                  label: AppStrings.of(locale, 'company_campaign_title_field'),
                   value: _detail.campaignTitle,
                   readOnly: true,
                 ),
@@ -160,10 +145,7 @@ class _CompanyCampaignDetailsPageState extends State<CompanyCampaignDetailsPage>
                 ),
                 SizedBox(height: 12.h),
                 CompanyCampaignFormField(
-                  label: AppStrings.of(
-                    locale,
-                    'company_campaign_target_age',
-                  ),
+                  label: AppStrings.of(locale, 'company_campaign_target_age'),
                   value: _detail.targetAgeGroup,
                   readOnly: true,
                   prefixIconAsset: ImageAssets.personIcon,
@@ -309,6 +291,155 @@ class _CampaignStatusSection extends StatelessWidget {
   }
 }
 
+class _CampaignHeroSummary extends StatelessWidget {
+  const _CampaignHeroSummary({required this.detail});
+
+  final CompanyCampaignDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(16.w, 15.h, 16.w, 16.h),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 18,
+            offset: Offset(0, 8.h),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  detail.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+              SizedBox(width: 10.w),
+              CompanyCampaignStatusChip(
+                status: detail.status,
+                labelKeyOverride: detail.statusLabelKey,
+                compact: true,
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: <Widget>[
+              const _AvatarStack(),
+              SizedBox(width: 9.w),
+              Expanded(
+                child: Text(
+                  '${detail.creators.length} influencers · ${detail.id}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: <Widget>[
+              const _PlatformDot(color: AppColors.instagram, label: 'IG'),
+              SizedBox(width: 7.w),
+              const _PlatformDot(color: AppColors.tiktok, label: 'TT'),
+              SizedBox(width: 7.w),
+              const _PlatformDot(color: AppColors.youtube, label: 'YT'),
+              const Spacer(),
+              Text(
+                '${detail.budgetMin} - ${detail.budgetMax} SAR',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.brandBlue,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AvatarStack extends StatelessWidget {
+  const _AvatarStack();
+
+  @override
+  Widget build(BuildContext context) {
+    const List<Color> colors = <Color>[
+      Color(0xFF2A8DF2),
+      Color(0xFFE1306C),
+      Color(0xFFFACC15),
+    ];
+    return SizedBox(
+      width: 52.w,
+      height: 22.w,
+      child: Stack(
+        children: List<Widget>.generate(colors.length, (int index) {
+          return Positioned(
+            left: (index * 15).w,
+            child: Container(
+              width: 22.w,
+              height: 22.w,
+              decoration: BoxDecoration(
+                color: colors[index],
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.white, width: 2.w),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _PlatformDot extends StatelessWidget {
+  const _PlatformDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24.w,
+      height: 24.w,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: AppColors.white,
+          fontSize: 7.5.sp,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
 class _AttachedFileRow extends StatelessWidget {
   const _AttachedFileRow({required this.name});
 
@@ -325,7 +456,11 @@ class _AttachedFileRow extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.check_circle_rounded, color: AppColors.brandBlue, size: 22.sp),
+          Icon(
+            Icons.check_circle_rounded,
+            color: AppColors.brandBlue,
+            size: 22.sp,
+          ),
           SizedBox(width: 10.w),
           Expanded(
             child: Text(
@@ -337,7 +472,11 @@ class _AttachedFileRow extends StatelessWidget {
               ),
             ),
           ),
-          Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 22.sp),
+          Icon(
+            Icons.close_rounded,
+            color: AppColors.textSecondary,
+            size: 22.sp,
+          ),
         ],
       ),
     );

@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 abstract final class CompanyCampaignCreatorCardLayout {
-  static double designWidth() => 203.w;
-  static double designHeight() => 248.h;
+  static double designWidth() => 176.w;
+  static double designHeight() => 188.h;
 }
 
 class CompanyCampaignCreatorCard extends StatelessWidget {
@@ -31,65 +31,76 @@ class CompanyCampaignCreatorCard extends StatelessWidget {
           width: CompanyCampaignCreatorCardLayout.designWidth(),
           height: CompanyCampaignCreatorCardLayout.designHeight(),
           child: Container(
-            padding: EdgeInsets.all(10.w),
+            padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(color: const Color(0xFFE7EAF0)),
             ),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10.r),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: creator.avatarUrl.isEmpty
-                        ? Container(color: const Color(0xFFE5E7EB))
-                        : CachedNetworkImage(
-                            imageUrl: creator.avatarUrl,
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      creator.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    ClipOval(
+                      child: SizedBox(
+                        width: 48.w,
+                        height: 48.w,
+                        child: creator.avatarUrl.isEmpty
+                            ? Container(
+                                color: const Color(0xFFE5E7EB),
+                                child: Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 26.sp,
+                                  color: AppColors.textMuted,
+                                ),
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: creator.avatarUrl,
+                                fit: BoxFit.cover,
+                              ),
                       ),
                     ),
-                  ),
-                  ...creator.platforms.take(3).map(_platformIcon),
-                ],
-              ),
-              SizedBox(height: 6.h),
-              CompanyCampaignStatusChip(
-                status: creator.status,
-                compact: true,
-              ),
-              SizedBox(height: 6.h),
-              Text(
-                creator.priceLabel,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.brandBlue,
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Text(
+                        creator.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          height: 1.15,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(height: 12.h),
+                Row(
+                  children: <Widget>[
+                    ...creator.platforms.take(3).map(_platformIcon),
+                    const Spacer(),
+                    Text(
+                      creator.priceLabel,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.brandBlue,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                CompanyCampaignStatusChip(
+                  status: creator.status,
+                  compact: true,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
