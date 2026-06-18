@@ -1,4 +1,7 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/features/company_campaigns/data/company_stars_repository.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_stars_view_data.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_star_models.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_back_app_bar.dart';
@@ -35,6 +38,7 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
   void initState() {
     super.initState();
     _platforms = CompanyStarsViewData.requestAdPlatforms();
+    _loadPlatforms();
   }
 
   @override
@@ -50,6 +54,82 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
 
   static const double _platformFeeRate = 0.15;
   static const double _taxRate = 0.15;
+
+  Future<void> _loadPlatforms() async {
+    if (!ApiUrlResolver.isConfigured) {
+      return;
+    }
+    try {
+      final CompanyStarProfile profile = await CompanyStarsRepository(
+        DioClient.instance,
+      ).fetchStarProfile(widget.starId);
+      final List<CompanyRequestAdPlatform> platforms = profile.adPrices
+          .map(_platformFromAdPrice)
+          .toList();
+      if (!mounted || platforms.isEmpty) {
+        return;
+      }
+      setState(() => _platforms = platforms);
+    } on Object {
+      // Keep the view-data fallback already in _platforms.
+    }
+  }
+
+  CompanyRequestAdPlatform _platformFromAdPrice(CompanyStarAdPriceLine line) {
+    final String name = line.platformName.trim().isNotEmpty
+        ? line.platformName.trim()
+        : _platformNameFromKey(line.labelKey);
+    return CompanyRequestAdPlatform(
+      id: _platformIdFromName(name),
+      name: name,
+      followersLabel: line.followersLabel,
+      lines: <CompanyRequestAdLine>[
+        CompanyRequestAdLine(
+          typeKey: 'company_request_ad_story',
+          priceLabel: line.coveragePrice,
+          quantity: 0,
+        ),
+        CompanyRequestAdLine(
+          typeKey: 'company_request_ad_video',
+          priceLabel: line.videoPrice,
+          quantity: 0,
+        ),
+        CompanyRequestAdLine(
+          typeKey: 'company_request_ad_post',
+          priceLabel: line.coveragePrice,
+          quantity: 0,
+        ),
+        CompanyRequestAdLine(
+          typeKey: 'company_request_ad_reel',
+          priceLabel: line.videoPrice,
+          quantity: 0,
+        ),
+      ],
+    );
+  }
+
+  String _platformNameFromKey(String key) {
+    return switch (key) {
+      'company_star_platform_snapchat' => 'Snapchat',
+      'company_star_platform_tiktok' => 'Tik Tok',
+      'company_star_platform_whatsapp' => 'Whatsapp',
+      _ => key,
+    };
+  }
+
+  String _platformIdFromName(String name) {
+    final String lower = name.toLowerCase();
+    if (lower.contains('snap')) {
+      return 'snap';
+    }
+    if (lower.contains('tik') || lower.contains('tok')) {
+      return 'tiktok';
+    }
+    if (lower.contains('whats')) {
+      return 'wa';
+    }
+    return lower.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  }
 
   double _parsePrice(String priceLabel) {
     return double.tryParse(priceLabel.replaceAll(',', '')) ?? 0;
@@ -180,7 +260,10 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
                             'company_request_ad_card_name',
                           ),
                           controller: _cardName,
-                          hint: AppStrings.of(locale, 'company_create_hint_brand'),
+                          hint: AppStrings.of(
+                            locale,
+                            'company_create_hint_brand',
+                          ),
                           prefixIcon: Icons.person_outline,
                         ),
                         SizedBox(height: 10.h),
@@ -290,22 +373,24 @@ class _PlatformCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8.w),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8D8),
-                  borderRadius: BorderRadius.circular(999.r),
-                ),
-                child: Text(
-                  '${platform.followersLabel} ${AppStrings.of(locale, 'company_star_followers')}',
-                  style: TextStyle(
-                    color: const Color(0xFFE6C44E),
-                    fontSize: 8.5.sp,
-                    fontWeight: FontWeight.w800,
+              if (platform.followersLabel.trim().isNotEmpty) ...<Widget>[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8D8),
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    '${platform.followersLabel} ${AppStrings.of(locale, 'company_star_followers')}',
+                    style: TextStyle(
+                      color: const Color(0xFFE6C44E),
+                      fontSize: 8.5.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 8.w),
+                SizedBox(width: 8.w),
+              ],
               Container(
                 width: 28.w,
                 height: 28.w,
@@ -325,6 +410,7 @@ class _PlatformCard extends StatelessWidget {
           ...List<Widget>.generate(platform.lines.length, (int i) {
             final CompanyRequestAdLine line = platform.lines[i];
             final bool isLast = i == platform.lines.length - 1;
+            final String priceLabel = line.priceLabel.trim();
             return Padding(
               padding: EdgeInsets.only(bottom: isLast ? 0 : 14.h),
               child: Row(
@@ -346,19 +432,21 @@ class _PlatformCard extends StatelessWidget {
                         Row(
                           children: <Widget>[
                             Text(
-                              line.priceLabel,
+                              priceLabel.isEmpty ? '-' : priceLabel,
                               style: TextStyle(
                                 color: AppColors.textPrimary,
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            SizedBox(width: 8.w),
-                            Image.asset(
-                              ImageAssets.rsIcon,
-                              width: 16.w,
-                              height: 16.h,
-                            ),
+                            if (priceLabel.isNotEmpty) ...<Widget>[
+                              SizedBox(width: 8.w),
+                              Image.asset(
+                                ImageAssets.rsIcon,
+                                width: 16.w,
+                                height: 16.h,
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -442,8 +530,9 @@ class _QtyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color borderColor =
-        active ? AppColors.brandBlue : const Color(0xFFD1D5DB);
+    final Color borderColor = active
+        ? AppColors.brandBlue
+        : const Color(0xFFD1D5DB);
     final Color iconColor = filled
         ? AppColors.white
         : active
@@ -527,7 +616,13 @@ class _PaymentSummary extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row(this.label, this.value, {this.bold = false, this.green = false, this.blue = false});
+  const _Row(
+    this.label,
+    this.value, {
+    this.bold = false,
+    this.green = false,
+    this.blue = false,
+  });
 
   final String label;
   final String value;

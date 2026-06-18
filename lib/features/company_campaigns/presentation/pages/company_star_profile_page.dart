@@ -136,19 +136,24 @@ class _CompanyStarProfilePageState extends State<CompanyStarProfilePage> {
                     child: SingleChildScrollView(
                       padding: EdgeInsets.fromLTRB(18.w, 0, 18.w, 100.h),
                       child: _tabIndex == 2
-                          ? Column(
-                              children: profile.adPrices
-                                  .map(
-                                    (CompanyStarAdPriceLine line) => Padding(
-                                      padding: EdgeInsets.only(bottom: 14.h),
-                                      child: _AdPriceCard(
-                                        line: line,
-                                        locale: locale,
-                                      ),
-                                    ),
+                          ? profile.adPrices.isEmpty
+                                ? const _EmptyAdPrices()
+                                : Column(
+                                    children: profile.adPrices
+                                        .map(
+                                          (CompanyStarAdPriceLine line) =>
+                                              Padding(
+                                                padding: EdgeInsets.only(
+                                                  bottom: 14.h,
+                                                ),
+                                                child: _AdPriceCard(
+                                                  line: line,
+                                                  locale: locale,
+                                                ),
+                                              ),
+                                        )
+                                        .toList(),
                                   )
-                                  .toList(),
-                            )
                           : const SizedBox.shrink(),
                     ),
                   ),
@@ -174,12 +179,45 @@ class _CompanyStarProfilePageState extends State<CompanyStarProfilePage> {
                 ),
                 child: Text(
                   AppStrings.of(locale, 'company_star_request_ad'),
-                  style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyAdPrices extends StatelessWidget {
+  const _EmptyAdPrices();
+
+  @override
+  Widget build(BuildContext context) {
+    return InfluencerPanelCard(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
+      child: Column(
+        children: <Widget>[
+          Icon(
+            Icons.payments_outlined,
+            color: AppColors.textMuted,
+            size: 28.sp,
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'No ad prices available',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -237,6 +275,10 @@ class _AdPriceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? asset = _platformAsset;
+    final String platformName = line.platformName.trim().isNotEmpty
+        ? line.platformName.trim()
+        : AppStrings.of(locale, line.labelKey);
+    final String followers = line.followersLabel.trim();
     return InfluencerPanelCard(
       padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 12.h),
       child: Column(
@@ -249,7 +291,7 @@ class _AdPriceCard extends StatelessWidget {
               ],
               Expanded(
                 child: Text(
-                  AppStrings.of(locale, line.labelKey),
+                  platformName,
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 18.sp,
@@ -257,22 +299,24 @@ class _AdPriceCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8D8),
-                  borderRadius: BorderRadius.circular(999.r),
-                ),
-                child: Text(
-                  '399.6k ${AppStrings.of(locale, 'company_star_followers')}',
-                  style: TextStyle(
-                    color: const Color(0xFFE6C44E),
-                    fontSize: 8.5.sp,
-                    fontWeight: FontWeight.w800,
+              if (followers.isNotEmpty) ...<Widget>[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8D8),
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    '$followers ${AppStrings.of(locale, 'company_star_followers')}',
+                    style: TextStyle(
+                      color: const Color(0xFFE6C44E),
+                      fontSize: 8.5.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 8.w),
+                SizedBox(width: 8.w),
+              ],
               Container(
                 width: 28.w,
                 height: 28.w,
@@ -320,6 +364,7 @@ class _PriceMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String displayValue = value.trim().isEmpty ? '-' : value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -335,15 +380,17 @@ class _PriceMetric extends StatelessWidget {
         Row(
           children: <Widget>[
             Text(
-              value,
+              displayValue,
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(width: 8.w),
-            Image.asset(ImageAssets.rsIcon, width: 16.w, height: 16.h),
+            if (value.trim().isNotEmpty) ...<Widget>[
+              SizedBox(width: 8.w),
+              Image.asset(ImageAssets.rsIcon, width: 16.w, height: 16.h),
+            ],
           ],
         ),
       ],

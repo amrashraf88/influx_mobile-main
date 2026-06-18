@@ -42,39 +42,331 @@ class CompanyStarsRepository {
       return base;
     }
 
-    String pick(List<String> keys, String fallback) {
-      for (final String k in keys) {
-        final Object? v = json[k];
-        if (v != null && v.toString().trim().isNotEmpty) {
-          return v.toString();
-        }
-      }
-      return fallback;
-    }
+    final List<Map<String, dynamic>> profileMaps = _nestedMaps(json);
+
+    String pick(List<String> keys, String fallback) =>
+        _pickFromMaps(profileMaps, keys, fallback);
+
+    final List<CompanyStarAdPriceLine> adPrices = _parseAdPrices(json);
 
     return CompanyStarProfile(
       id: pick(<String>['id', 'uuid'], base.id),
-      name: pick(<String>['name', 'full_name', 'display_name'], base.name),
+      name: pick(<String>[
+        'name',
+        'full_name',
+        'fullName',
+        'display_name',
+        'displayName',
+        'username',
+      ], base.name),
       headline: pick(<String>[
         'headline',
         'title',
         'category',
         'niche',
+        'creator_type',
+        'creatorType',
       ], base.headline),
       bio: pick(<String>['bio', 'about', 'description'], base.bio),
       avatarUrl: ApiMedia.resolve(
-        pick(<String>['avatar_url', 'image_url', 'photo'], base.avatarUrl),
+        pick(<String>[
+          'avatar_url',
+          'avatarUrl',
+          'image_url',
+          'imageUrl',
+          'profile_image_url',
+          'profileImageUrl',
+          'photo',
+          'image',
+          'url',
+          'path',
+        ], base.avatarUrl),
       ),
       coverImageUrl: ApiMedia.resolve(
-        pick(<String>['cover_image_url', 'cover', 'image'], base.coverImageUrl),
+        pick(<String>[
+          'cover_image_url',
+          'coverImageUrl',
+          'cover',
+          'cover_image',
+          'coverImage',
+        ], base.coverImageUrl),
       ),
       mawthooqLabel: pick(<String>[
         'mawthooq_label',
+        'mawthooqLabel',
+        'mawthooq',
+        'mawthooq_status',
+        'mawthooqStatus',
         'maroof',
         'license_number',
+        'licenseNumber',
       ], base.mawthooqLabel),
-      adPrices: base.adPrices,
+      adPrices: adPrices,
     );
+  }
+
+  static List<CompanyStarAdPriceLine> _parseAdPrices(
+    Map<String, dynamic> json,
+  ) {
+    final List<dynamic> rows = <dynamic>[
+      ..._extractNamedLists(json, <String>[
+        'ad_prices',
+        'adPrices',
+        'prices',
+        'platform_prices',
+        'platformPrices',
+        'social_prices',
+        'socialPrices',
+        'accounts',
+        'social_accounts',
+        'socialAccounts',
+        'platforms',
+      ]),
+    ];
+
+    return rows
+        .whereType<Map<dynamic, dynamic>>()
+        .map((Map<dynamic, dynamic> row) {
+          final Map<String, dynamic> map = Map<String, dynamic>.from(row);
+          final String platform = _pickFromMaps(
+            <Map<String, dynamic>>[map, ..._nestedMaps(map).skip(1)],
+            <String>[
+              'platform',
+              'platform_name',
+              'platformName',
+              'name',
+              'label',
+              'type',
+              'social',
+            ],
+          );
+          final String labelKey = _platformLabelKey(platform);
+          final String followers = _pickFromMaps(
+            <Map<String, dynamic>>[map, ..._nestedMaps(map).skip(1)],
+            <String>[
+              'followers',
+              'followers_count',
+              'followersCount',
+              'followers_label',
+              'followersLabel',
+              'count',
+              'audience',
+            ],
+          );
+          final String coverage = _pickPrice(map, <String>[
+            'coverage_price',
+            'coveragePrice',
+            'coverage',
+            'story_price',
+            'storyPrice',
+            'post_price',
+            'postPrice',
+            'price',
+          ]);
+          final String video = _pickPrice(map, <String>[
+            'video_price',
+            'videoPrice',
+            'reel_price',
+            'reelPrice',
+            'tiktok_price',
+            'tiktokPrice',
+            'price_video',
+            'priceVideo',
+            'price',
+          ]);
+          if (coverage.isEmpty && video.isEmpty) {
+            return null;
+          }
+          return CompanyStarAdPriceLine(
+            labelKey: labelKey,
+            platformName: platform,
+            followersLabel: _formatMetric(followers),
+            coveragePrice: _formatMoney(coverage),
+            videoPrice: _formatMoney(video),
+          );
+        })
+        .whereType<CompanyStarAdPriceLine>()
+        .toList();
+  }
+
+  static List<dynamic> _extractNamedLists(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    final List<dynamic> lists = <dynamic>[];
+    void visit(Object? value) {
+      if (value is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+        for (final String key in keys) {
+          final Object? candidate = map[key];
+          if (candidate is List) {
+            lists.addAll(candidate);
+          }
+          if (candidate is Map) {
+            lists.add(candidate);
+          }
+        }
+        for (final Object? child in map.values) {
+          if (child is Map) {
+            visit(child);
+          }
+        }
+      }
+    }
+
+    visit(json);
+    return lists;
+  }
+
+  static List<Map<String, dynamic>> _nestedMaps(Map<String, dynamic> json) {
+    final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+    for (final String key in <String>[
+      'user',
+      'profile',
+      'content_creator',
+      'contentCreator',
+      'creator',
+      'media',
+      'image',
+      'avatar',
+    ]) {
+      final Object? value = json[key];
+      if (value is Map) {
+        maps.add(Map<String, dynamic>.from(value));
+      }
+    }
+    return maps;
+  }
+
+  static String _pickFromMaps(
+    List<Map<String, dynamic>> maps,
+    List<String> keys, [
+    String fallback = '',
+  ]) {
+    for (final Map<String, dynamic> map in maps) {
+      for (final String key in keys) {
+        final Object? value = map[key];
+        final String text = _stringify(value).trim();
+        if (text.isNotEmpty) {
+          return text;
+        }
+      }
+    }
+    return fallback;
+  }
+
+  static String _pickPrice(Map<String, dynamic> map, List<String> keys) {
+    final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[
+      map,
+      ..._nestedMaps(map).skip(1),
+    ];
+    for (final String direct in keys) {
+      final String value = _pickFromMaps(maps, <String>[direct]);
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    for (final String groupKey in <String>[
+      'prices',
+      'ad_prices',
+      'adPrices',
+      'rate',
+      'rates',
+    ]) {
+      final Object? group = map[groupKey];
+      if (group is Map) {
+        final String value = _pickFromMaps(<Map<String, dynamic>>[
+          Map<String, dynamic>.from(group),
+        ], keys);
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+    }
+    return '';
+  }
+
+  static String _stringify(Object? value) {
+    if (value is Map) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+      for (final String key in <String>[
+        'label',
+        'name',
+        'title',
+        'value',
+        'count',
+        'amount',
+        'price',
+      ]) {
+        final Object? nested = map[key];
+        if (nested != null && nested.toString().trim().isNotEmpty) {
+          return nested.toString();
+        }
+      }
+      return '';
+    }
+    return value?.toString() ?? '';
+  }
+
+  static String _platformLabelKey(String value) {
+    final String lower = value.toLowerCase();
+    if (lower.contains('snap')) {
+      return 'company_star_platform_snapchat';
+    }
+    if (lower.contains('tik') || lower.contains('tok')) {
+      return 'company_star_platform_tiktok';
+    }
+    if (lower.contains('whats')) {
+      return 'company_star_platform_whatsapp';
+    }
+    return value.trim().isEmpty
+        ? 'company_star_platform_snapchat'
+        : value.trim();
+  }
+
+  static String _formatMoney(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+    final String cleaned = trimmed
+        .replaceAll(
+          RegExp(r'\s*(SAR|ريال|ر\.س|﷼)\s*', caseSensitive: false),
+          '',
+        )
+        .trim();
+    final num? numeric = num.tryParse(cleaned.replaceAll(',', ''));
+    if (numeric == null) {
+      return cleaned;
+    }
+    return _compactNumber(numeric, money: true);
+  }
+
+  static String _formatMetric(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.contains(RegExp(r'[kKmM]'))) {
+      return trimmed;
+    }
+    final num? numeric = num.tryParse(trimmed.replaceAll(',', ''));
+    if (numeric == null) {
+      return trimmed;
+    }
+    return _compactNumber(numeric);
+  }
+
+  static String _compactNumber(num value, {bool money = false}) {
+    if (money || value.abs() < 1000) {
+      return value % 1 == 0
+          ? value.toInt().toString().replaceAllMapped(
+              RegExp(r'\B(?=(\d{3})+(?!\d))'),
+              (_) => ',',
+            )
+          : value.toString();
+    }
+    if (value.abs() >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}m';
+    }
+    return '${(value / 1000).toStringAsFixed(1)}k';
   }
 
   static Map<String, dynamic> _extractMap(dynamic data) {

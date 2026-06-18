@@ -258,14 +258,24 @@ class CompanyStarAdPriceLine extends Equatable {
     required this.labelKey,
     required this.coveragePrice,
     required this.videoPrice,
+    this.followersLabel = '',
+    this.platformName = '',
   });
 
   final String labelKey;
   final String coveragePrice;
   final String videoPrice;
+  final String followersLabel;
+  final String platformName;
 
   @override
-  List<Object?> get props => <Object?>[labelKey, coveragePrice, videoPrice];
+  List<Object?> get props => <Object?>[
+    labelKey,
+    coveragePrice,
+    videoPrice,
+    followersLabel,
+    platformName,
+  ];
 }
 
 class CompanyStarProfile extends Equatable {
