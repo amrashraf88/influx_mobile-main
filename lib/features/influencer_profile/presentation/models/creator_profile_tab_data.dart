@@ -389,24 +389,12 @@ class CreatorProfileTabData {
         'socialAccount.profileUrl',
       ]),
       coverage: _formatPrice(
-        _pick(json, <String>[
-          'coverage_price',
-          'coveragePrice',
-          'story_price',
-          'storyPrice',
-          'coverage',
-        ]),
-        '17,600',
+        _pickPriceFromAccount(json, preferVideo: false),
+        '',
       ),
       videoPrice: _formatPrice(
-        _pick(json, <String>[
-          'video_price',
-          'videoPrice',
-          'post_price',
-          'postPrice',
-          'price',
-        ]),
-        '3,500',
+        _pickPriceFromAccount(json, preferVideo: true),
+        '',
       ),
     );
   }
@@ -525,6 +513,79 @@ class CreatorProfileTabData {
 
   static String _pickId(Map<String, dynamic> json) =>
       _pick(json, <String>['id', '_id', 'uuid', 'uid']);
+
+  static String _pickPriceFromAccount(
+    Map<String, dynamic> json, {
+    required bool preferVideo,
+  }) {
+    final String direct = _pick(
+      json,
+      preferVideo
+          ? <String>[
+              'video_price',
+              'videoPrice',
+              'reel_price',
+              'reelPrice',
+              'post_price',
+              'postPrice',
+              'price',
+            ]
+          : <String>[
+              'coverage_price',
+              'coveragePrice',
+              'story_price',
+              'storyPrice',
+              'coverage',
+              'price',
+            ],
+    );
+    if (direct.isNotEmpty) {
+      return direct;
+    }
+
+    final Object? prices = json['prices'];
+    if (prices is! List) {
+      return '';
+    }
+
+    for (final Object? row in prices) {
+      if (row is! Map) {
+        continue;
+      }
+      final Map<String, dynamic> priceRow = Map<String, dynamic>.from(row);
+      final String type = _pick(priceRow, <String>[
+        'content_type',
+        'contentType',
+        'type',
+        'label',
+        'name',
+        'value',
+      ]).toLowerCase();
+      final bool matchesVideo =
+          preferVideo &&
+          (type.contains('video') ||
+              type.contains('reel') ||
+              type.contains('tik') ||
+              type.contains('post'));
+      final bool matchesCoverage =
+          !preferVideo &&
+          (type.contains('coverage') ||
+              type.contains('story') ||
+              type.contains('snap'));
+      if (!matchesVideo && !matchesCoverage && prices.length > 1) {
+        continue;
+      }
+      final String value = _pick(priceRow, <String>[
+        'price',
+        'amount',
+        'value',
+      ]);
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    return '';
+  }
 
   /// Resolves a platform name/slug from a social account row. The API may send
   /// the platform as a plain string, a nested object ({name, slug, id}) or an

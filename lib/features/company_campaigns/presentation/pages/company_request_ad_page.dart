@@ -1,11 +1,16 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/core/routes/route_names.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
+import 'package:adzmavall/features/company_campaigns/data/company_campaigns_repository.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_stars_repository.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_stars_view_data.dart';
+import 'package:adzmavall/features/company_campaigns/presentation/models/company_campaign_models.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_star_models.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_back_app_bar.dart';
-import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_flow_dialogs.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_date_field.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_form_field.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
@@ -14,6 +19,7 @@ import 'package:adzmavall/utils/appcolors.dart';
 import 'package:adzmavall/utils/imageassets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class CompanyRequestAdPage extends StatefulWidget {
@@ -33,12 +39,19 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
   final TextEditingController _cardName = TextEditingController();
   final TextEditingController _expiry = TextEditingController();
   final TextEditingController _cvv = TextEditingController();
+  List<CompanyCampaignListItem> _campaigns = const <CompanyCampaignListItem>[];
+  String? _selectedCampaignId;
+  String _creatorType = 'influencer';
   bool _useCard = true;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _platforms = CompanyStarsViewData.requestAdPlatforms();
+    _platforms = ApiUrlResolver.isConfigured
+        ? <CompanyRequestAdPlatform>[]
+        : CompanyStarsViewData.requestAdPlatforms();
+    _loadCampaigns();
     _loadPlatforms();
   }
 
@@ -56,6 +69,27 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
   static const double _platformFeeRate = 0.15;
   static const double _taxRate = 0.15;
 
+  Future<void> _loadCampaigns() async {
+    if (!ApiUrlResolver.isConfigured) {
+      return;
+    }
+    try {
+      final List<CompanyCampaignListItem> campaigns =
+          await CompanyCampaignsRepository(DioClient.instance).fetchCampaigns();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _campaigns = campaigns;
+        _selectedCampaignId = campaigns.isNotEmpty ? campaigns.first.id : null;
+      });
+    } on Object {
+      if (mounted) {
+        setState(() => _campaigns = const <CompanyCampaignListItem>[]);
+      }
+    }
+  }
+
   Future<void> _loadPlatforms() async {
     if (!ApiUrlResolver.isConfigured) {
       return;
@@ -64,6 +98,7 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
       final CompanyStarProfile profile = await CompanyStarsRepository(
         DioClient.instance,
       ).fetchStarProfile(widget.starId);
+      _creatorType = profile.creatorTypeValue;
       final List<CompanyRequestAdPlatform> platforms = profile.adPrices
           .map(_platformFromAdPrice)
           .toList();
@@ -88,21 +123,25 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
         CompanyRequestAdLine(
           typeKey: 'company_request_ad_story',
           priceLabel: line.coveragePrice,
+          priceId: line.coveragePriceId,
           quantity: 0,
         ),
         CompanyRequestAdLine(
           typeKey: 'company_request_ad_video',
           priceLabel: line.videoPrice,
+          priceId: line.videoPriceId,
           quantity: 0,
         ),
         CompanyRequestAdLine(
           typeKey: 'company_request_ad_post',
           priceLabel: line.coveragePrice,
+          priceId: line.coveragePriceId,
           quantity: 0,
         ),
         CompanyRequestAdLine(
           typeKey: 'company_request_ad_reel',
           priceLabel: line.videoPrice,
+          priceId: line.videoPriceId,
           quantity: 0,
         ),
       ],
@@ -174,6 +213,170 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
     return NumberFormat('#,##0.00').format(amount);
   }
 
+  void _toast(String message, {AppFeedbackType type = AppFeedbackType.info}) {
+    if (!mounted) {
+      return;
+    }
+    showAppFeedback(context, message: message, type: type);
+  }
+
+  String? _deliveryForApi(Locale locale) {
+    final String raw = _delivery.text.trim();
+    if (raw.isEmpty) {
+      return null;
+    }
+    try {
+      final DateTime parsed = DateFormat(
+        'dd MMMM, yyyy',
+        locale.languageCode,
+      ).parseStrict(raw);
+      return DateFormat('yyyy-MM-dd').format(parsed);
+    } on Object {
+      return null;
+    }
+  }
+
+  int _selectedQuantity() {
+    int total = 0;
+    for (final CompanyRequestAdPlatform platform in _platforms) {
+      for (final CompanyRequestAdLine line in platform.lines) {
+        total += line.quantity;
+      }
+    }
+    return total;
+  }
+
+  List<Map<String, dynamic>> _selectedRequestItems() {
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+    for (final CompanyRequestAdPlatform platform in _platforms) {
+      for (final CompanyRequestAdLine line in platform.lines) {
+        if (line.quantity <= 0) {
+          continue;
+        }
+        if (line.priceId.trim().isEmpty) {
+          continue;
+        }
+        items.add(<String, dynamic>{
+          'price_id': line.priceId,
+          'quantity': line.quantity,
+        });
+      }
+    }
+    return items;
+  }
+
+  bool _hasMissingSelectedPriceIds() {
+    for (final CompanyRequestAdPlatform platform in _platforms) {
+      for (final CompanyRequestAdLine line in platform.lines) {
+        if (line.quantity > 0 && line.priceId.trim().isEmpty) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  Future<void> _submit(Locale locale) async {
+    if (_isSubmitting) {
+      return;
+    }
+    final String? campaignId = _selectedCampaignId;
+    if (campaignId == null || campaignId.trim().isEmpty) {
+      _toast('Please select a campaign.', type: AppFeedbackType.error);
+      return;
+    }
+    final String? deliveryDate = _deliveryForApi(locale);
+    if (deliveryDate == null) {
+      _toast(
+        'Please select a valid delivery date.',
+        type: AppFeedbackType.error,
+      );
+      return;
+    }
+    final String description = _description.text.trim();
+    if (description.isEmpty) {
+      _toast('Please add a short description.', type: AppFeedbackType.error);
+      return;
+    }
+    final int quantity = _selectedQuantity();
+    if (quantity <= 0) {
+      _toast('Please choose at least one item.', type: AppFeedbackType.error);
+      return;
+    }
+
+    final Map<String, dynamic> body = <String, dynamic>{
+      'content_creator_id': widget.starId,
+      'delivery_date': deliveryDate,
+      'description': description,
+      'payment_method': _useCard ? 'card' : 'wallet',
+    };
+
+    final String type = _creatorType.toLowerCase();
+    if (type.contains('ugc')) {
+      body['ugc_quantity'] = quantity;
+    } else if (type.contains('model')) {
+      body['model_hours'] = quantity;
+    } else if (type.contains('collage') || type.contains('college')) {
+      body['collage_seconds'] = quantity;
+    } else {
+      final List<Map<String, dynamic>> items = _selectedRequestItems();
+      if (items.isEmpty || _hasMissingSelectedPriceIds()) {
+        _toast(
+          'Please wait until creator prices are loaded, then try again.',
+          type: AppFeedbackType.error,
+        );
+        return;
+      }
+      body['request_items'] = items;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final Map<String, dynamic> result = await CompanyCampaignsRepository(
+        DioClient.instance,
+      ).createCampaignRequest(campaignId: campaignId, body: body);
+      if (!mounted) {
+        return;
+      }
+      final String redirectUrl = _pickResult(result, <String>[
+        'redirect_url',
+        'redirectUrl',
+        'payment_url',
+        'paymentUrl',
+      ]);
+      _toast(
+        redirectUrl.isEmpty
+            ? 'Ad request sent successfully.'
+            : 'Payment link is ready. Complete payment from campaigns.',
+        type: AppFeedbackType.success,
+      );
+      context.go(RouteNames.companyCampaigns);
+    } on ApiException catch (e) {
+      _toast(e.message, type: AppFeedbackType.error);
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  String _pickResult(Map<String, dynamic> json, List<String> keys) {
+    final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+    final Object? data = json['data'];
+    if (data is Map) {
+      maps.add(Map<String, dynamic>.from(data));
+    }
+    for (final Map<String, dynamic> map in maps) {
+      for (final String key in keys) {
+        final Object? value = map[key];
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return value.toString().trim();
+        }
+      }
+    }
+    return '';
+  }
+
   void _setQty(int platformIndex, int lineIndex, int delta) {
     setState(() {
       final CompanyRequestAdPlatform p = _platforms[platformIndex];
@@ -211,6 +414,15 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (ApiUrlResolver.isConfigured) ...<Widget>[
+              _CampaignSelector(
+                campaigns: _campaigns,
+                value: _selectedCampaignId,
+                onChanged: (String? value) =>
+                    setState(() => _selectedCampaignId = value),
+              ),
+              SizedBox(height: 12.h),
+            ],
             CompanyCampaignDateField(
               label: AppStrings.of(locale, 'company_request_ad_delivery'),
               controller: _delivery,
@@ -329,19 +541,80 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
           child: SizedBox(
             height: 48.h,
             child: FilledButton(
-              onPressed: () => showPaymentSuccessDialog(context),
+              onPressed: _isSubmitting ? null : () => _submit(locale),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.brandBlue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28.r),
                 ),
               ),
-              child: Text(
-                AppStrings.of(locale, 'company_request_ad_pay'),
-                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
-              ),
+              child: _isSubmitting
+                  ? SizedBox(
+                      width: 22.w,
+                      height: 22.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : Text(
+                      AppStrings.of(locale, 'company_request_ad_pay'),
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CampaignSelector extends StatelessWidget {
+  const _CampaignSelector({
+    required this.campaigns,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final List<CompanyCampaignListItem> campaigns;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFE7EAF0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: value,
+          hint: Text(
+            'Select campaign',
+            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
+          ),
+          items: campaigns
+              .map(
+                (CompanyCampaignListItem campaign) => DropdownMenuItem<String>(
+                  value: campaign.id,
+                  child: Text(
+                    campaign.title.isEmpty
+                        ? 'Campaign #${campaign.id}'
+                        : campaign.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
         ),
       ),
     );

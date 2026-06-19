@@ -360,6 +360,8 @@ class CompanyStarsRepository {
             followersLabel: _formatMetric(followers),
             coveragePrice: _formatMoney(coverage),
             videoPrice: _formatMoney(video),
+            coveragePriceId: _pickPriceId(map, preferVideo: false),
+            videoPriceId: _pickPriceId(map, preferVideo: true),
           );
         })
         .whereType<CompanyStarAdPriceLine>()
@@ -457,6 +459,98 @@ class CompanyStarsRepository {
         ], keys);
         if (value.isNotEmpty) {
           return value;
+        }
+      }
+      if (group is List) {
+        final bool wantsVideo = keys.any(
+          (String key) =>
+              key.toLowerCase().contains('video') ||
+              key.toLowerCase().contains('reel') ||
+              key.toLowerCase().contains('tiktok'),
+        );
+        final bool wantsCoverage = keys.any(
+          (String key) =>
+              key.toLowerCase().contains('coverage') ||
+              key.toLowerCase().contains('story') ||
+              key.toLowerCase().contains('post'),
+        );
+        for (final Object? row in group) {
+          if (row is! Map) {
+            continue;
+          }
+          final Map<String, dynamic> priceRow = Map<String, dynamic>.from(row);
+          final String type = _stringify(
+            priceRow['content_type'] ?? priceRow['type'] ?? priceRow['label'],
+          ).toLowerCase();
+          final bool matchesVideo =
+              wantsVideo &&
+              (type.contains('video') ||
+                  type.contains('reel') ||
+                  type.contains('tik'));
+          final bool matchesCoverage =
+              wantsCoverage &&
+              (type.contains('coverage') ||
+                  type.contains('story') ||
+                  type.contains('post'));
+          if (!matchesVideo && !matchesCoverage && group.length > 1) {
+            continue;
+          }
+          final String value = _pickFromMaps(
+            <Map<String, dynamic>>[priceRow],
+            <String>['price', 'amount', 'value'],
+          );
+          if (value.isNotEmpty) {
+            return value;
+          }
+        }
+      }
+    }
+    return '';
+  }
+
+  static String _pickPriceId(
+    Map<String, dynamic> map, {
+    required bool preferVideo,
+  }) {
+    for (final String groupKey in <String>[
+      'prices',
+      'ad_prices',
+      'adPrices',
+      'rate',
+      'rates',
+    ]) {
+      final Object? group = map[groupKey];
+      if (group is! List) {
+        continue;
+      }
+      for (final Object? row in group) {
+        if (row is! Map) {
+          continue;
+        }
+        final Map<String, dynamic> priceRow = Map<String, dynamic>.from(row);
+        final String type = _stringify(
+          priceRow['content_type'] ?? priceRow['type'] ?? priceRow['label'],
+        ).toLowerCase();
+        final bool matchesVideo =
+            preferVideo &&
+            (type.contains('video') ||
+                type.contains('reel') ||
+                type.contains('tik') ||
+                type.contains('post'));
+        final bool matchesCoverage =
+            !preferVideo &&
+            (type.contains('coverage') ||
+                type.contains('story') ||
+                type.contains('snap'));
+        if (!matchesVideo && !matchesCoverage && group.length > 1) {
+          continue;
+        }
+        final String id = _pickFromMaps(
+          <Map<String, dynamic>>[priceRow],
+          <String>['id', 'price_id', 'priceId', 'uuid'],
+        );
+        if (id.isNotEmpty) {
+          return id;
         }
       }
     }

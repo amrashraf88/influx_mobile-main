@@ -430,6 +430,8 @@ class CompanyStarAdPriceLine extends Equatable {
     required this.videoPrice,
     this.followersLabel = '',
     this.platformName = '',
+    this.coveragePriceId = '',
+    this.videoPriceId = '',
   });
 
   final String labelKey;
@@ -437,6 +439,8 @@ class CompanyStarAdPriceLine extends Equatable {
   final String videoPrice;
   final String followersLabel;
   final String platformName;
+  final String coveragePriceId;
+  final String videoPriceId;
 
   @override
   List<Object?> get props => <Object?>[
@@ -445,6 +449,8 @@ class CompanyStarAdPriceLine extends Equatable {
     videoPrice,
     followersLabel,
     platformName,
+    coveragePriceId,
+    videoPriceId,
   ];
 }
 
@@ -530,21 +536,24 @@ class CompanyRequestAdLine extends Equatable {
   const CompanyRequestAdLine({
     required this.typeKey,
     required this.priceLabel,
+    this.priceId = '',
     this.quantity = 0,
   });
 
   final String typeKey;
   final String priceLabel;
+  final String priceId;
   final int quantity;
 
   CompanyRequestAdLine copyWith({int? quantity}) {
     return CompanyRequestAdLine(
       typeKey: typeKey,
       priceLabel: priceLabel,
+      priceId: priceId,
       quantity: quantity ?? this.quantity,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[typeKey, priceLabel, quantity];
+  List<Object?> get props => <Object?>[typeKey, priceLabel, priceId, quantity];
 }

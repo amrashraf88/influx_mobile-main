@@ -288,6 +288,24 @@ class CompanyCampaignInfluencerDetail extends Equatable {
     this.socialPlatforms = const <String>[],
   });
 
+  factory CompanyCampaignInfluencerDetail.empty(String id) {
+    return CompanyCampaignInfluencerDetail(
+      id: id,
+      name: '',
+      headline: '',
+      avatarUrl: '',
+      statusLabelKey: 'company_campaign_status_pending_client',
+      priceLabel: '',
+      files: const <({String name, String sizeLabel})>[],
+      links: const <String>[],
+      orderLines: const <({String labelKey, String value})>[],
+      totalWithTax: '',
+      depositAmount: '',
+      releasedAmount: '',
+      socialPlatforms: const <String>[],
+    );
+  }
+
   final String id;
   final String name;
   final String headline;

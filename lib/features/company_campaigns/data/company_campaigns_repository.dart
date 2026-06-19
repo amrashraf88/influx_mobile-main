@@ -1,6 +1,9 @@
 import 'package:adzmavall/core/config/api_endpoints.dart';
+import 'package:adzmavall/core/network/api_error_parser.dart';
 import 'package:adzmavall/core/network/api_media.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:adzmavall/features/company_campaigns/data/company_campaigns_view_data.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_campaign_models.dart';
 import 'package:dio/dio.dart';
@@ -124,7 +127,7 @@ class CompanyCampaignsRepository {
     String campaignRequestId,
   ) async {
     final CompanyCampaignInfluencerDetail base =
-        CompanyCampaignsViewData.influencerDetail(campaignRequestId);
+        CompanyCampaignInfluencerDetail.empty(campaignRequestId);
     final Response<dynamic> res = await _dio.get<dynamic>(
       ApiUrlResolver.resolve(
         ApiEndpoints.brandCampaignRequestPath(campaignRequestId),
@@ -142,8 +145,12 @@ class CompanyCampaignsRepository {
         _pickFromMaps(maps, keys, fallback);
 
     final List<String> platforms = _parsePlatforms(json).toList();
-    final List<({String name, String sizeLabel})> files = _parseFiles(json);
-    final List<String> links = _parseLinks(json);
+    final List<({String name, String sizeLabel})> files =
+        await _fetchDeliverableFiles(campaignRequestId, _parseFiles(json));
+    final List<String> links = await _fetchDeliverableLinks(
+      campaignRequestId,
+      _parseLinks(json),
+    );
     final String total = pick(<String>[
       'total_with_tax',
       'totalWithTax',
@@ -197,8 +204,8 @@ class CompanyCampaignsRepository {
         'budget',
       ], base.priceLabel),
       socialPlatforms: platforms.isEmpty ? base.socialPlatforms : platforms,
-      files: files.isEmpty ? base.files : files,
-      links: links.isEmpty ? base.links : links,
+      files: files,
+      links: links,
       orderLines: _orderLines(json, base.orderLines),
       totalWithTax: total,
       depositAmount: pick(<String>[
@@ -247,6 +254,23 @@ class CompanyCampaignsRepository {
         ...extraFields,
       },
     );
+  }
+
+  Future<Map<String, dynamic>> createCampaignRequest({
+    required String campaignId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final Response<dynamic> res = await _dio.post<dynamic>(
+        ApiUrlResolver.resolve(
+          ApiEndpoints.brandCampaignRequestsPath(campaignId),
+        ),
+        data: body,
+      );
+      return _extractMap(res.data);
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
+    }
   }
 
   static String _creatorTypeValue(String label) {
@@ -543,6 +567,52 @@ class CompanyCampaignsRepository {
     }).toList();
   }
 
+  Future<List<({String name, String sizeLabel})>> _fetchDeliverableFiles(
+    String campaignRequestId,
+    List<({String name, String sizeLabel})> fallback,
+  ) async {
+    try {
+      final Response<dynamic> res = await _dio.get<dynamic>(
+        ApiUrlResolver.resolve(
+          ApiEndpoints.applicationCampaignRequestDeliverableFilesPath(
+            campaignRequestId,
+          ),
+        ),
+      );
+      final List<({String name, String sizeLabel})> files =
+          _extractList(res.data).whereType<Map<dynamic, dynamic>>().map((
+            Map<dynamic, dynamic> row,
+          ) {
+            final Map<String, dynamic> map = Map<String, dynamic>.from(row);
+            final Map<String, dynamic>? file = map['file'] is Map
+                ? Map<String, dynamic>.from(map['file'] as Map)
+                : null;
+            final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[
+              ?file,
+              map,
+            ];
+            return (
+              name: _pickFromMaps(maps, <String>[
+                'name',
+                'file_name',
+                'fileName',
+                'title',
+                'url',
+              ], 'File'),
+              sizeLabel: _pickFromMaps(maps, <String>[
+                'size_label',
+                'sizeLabel',
+                'size',
+                'mime_type',
+              ]),
+            );
+          }).toList();
+      return files.isEmpty ? fallback : files;
+    } on Object {
+      return fallback;
+    }
+  }
+
   static List<String> _parseLinks(Map<String, dynamic> json) {
     return _extractNamedLists(json, <String>[
           'links',
@@ -561,6 +631,36 @@ class CompanyCampaignsRepository {
         })
         .where((String link) => link.trim().isNotEmpty)
         .toList();
+  }
+
+  Future<List<String>> _fetchDeliverableLinks(
+    String campaignRequestId,
+    List<String> fallback,
+  ) async {
+    try {
+      final Response<dynamic> res = await _dio.get<dynamic>(
+        ApiUrlResolver.resolve(
+          ApiEndpoints.applicationCampaignRequestDeliverableLinksPath(
+            campaignRequestId,
+          ),
+        ),
+      );
+      final List<String> links = _extractList(res.data)
+          .map((dynamic item) {
+            if (item is Map) {
+              return _pickFromMaps(
+                <Map<String, dynamic>>[Map<String, dynamic>.from(item)],
+                <String>['url', 'link', 'value'],
+              );
+            }
+            return item.toString();
+          })
+          .where((String link) => link.trim().isNotEmpty)
+          .toList();
+      return links.isEmpty ? fallback : links;
+    } on Object {
+      return fallback;
+    }
   }
 
   static List<({String labelKey, String value})> _orderLines(

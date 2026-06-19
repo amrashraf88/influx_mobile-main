@@ -12,7 +12,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Influencer details from a campaign request, loaded from API with fallback.
+/// Influencer details from a campaign request, loaded from API.
 class CompanyCampaignInfluencerDetailsPage extends StatefulWidget {
   const CompanyCampaignInfluencerDetailsPage({
     super.key,
@@ -35,7 +35,9 @@ class _CompanyCampaignInfluencerDetailsPageState
   @override
   void initState() {
     super.initState();
-    _detail = CompanyCampaignsViewData.influencerDetail(widget.influencerId);
+    _detail = ApiUrlResolver.isConfigured
+        ? CompanyCampaignInfluencerDetail.empty(widget.influencerId)
+        : CompanyCampaignsViewData.influencerDetail(widget.influencerId);
     _loadDetail();
   }
 
@@ -53,7 +55,7 @@ class _CompanyCampaignInfluencerDetailsPageState
       }
       setState(() => _detail = detail);
     } on Object {
-      // Keep the local fallback.
+      // Keep the current empty/API-safe state; do not inject mock request data.
     }
   }
 
