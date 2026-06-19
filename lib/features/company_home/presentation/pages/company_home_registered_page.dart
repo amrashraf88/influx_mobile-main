@@ -65,11 +65,9 @@ class _CompanyHomeRegisteredPageState extends State<CompanyHomeRegisteredPage> {
       return CompanyHomeViewData.currentCampaigns;
     }
     try {
-      final List<CompanyHomeCampaign> list = await _repo!
-          .fetchCurrentCampaigns();
-      return list.isNotEmpty ? list : CompanyHomeViewData.currentCampaigns;
+      return _repo!.fetchCurrentCampaigns();
     } on Object {
-      return CompanyHomeViewData.currentCampaigns;
+      return const <CompanyHomeCampaign>[];
     }
   }
 
@@ -87,13 +85,23 @@ class _CompanyHomeRegisteredPageState extends State<CompanyHomeRegisteredPage> {
 
   Future<List<CompanyHomeInfluencer>> _loadInfluencers() async {
     if (_repo == null) {
-      return CompanyHomeViewData.influencers;
+      return CompanyHomeViewData.influencers
+          .where(
+            (CompanyHomeInfluencer influencer) =>
+                influencer.creatorTypeValue == 'influencer',
+          )
+          .toList();
     }
     try {
       final List<CompanyHomeInfluencer> list = await _repo!.fetchInfluencers();
-      return list.isNotEmpty ? list : CompanyHomeViewData.influencers;
+      return list
+          .where(
+            (CompanyHomeInfluencer influencer) =>
+                influencer.creatorTypeValue == 'influencer',
+          )
+          .toList();
     } on Object {
-      return CompanyHomeViewData.influencers;
+      return const <CompanyHomeInfluencer>[];
     }
   }
 
@@ -393,7 +401,7 @@ class _CampaignsRow extends StatelessWidget {
                 );
               }
               final List<CompanyHomeCampaign> items =
-                  snapshot.data ?? CompanyHomeViewData.currentCampaigns;
+                  snapshot.data ?? const <CompanyHomeCampaign>[];
               if (items.isEmpty) {
                 return const SizedBox.shrink();
               }
@@ -494,7 +502,7 @@ class _InfluencersGrid extends StatelessWidget {
               );
             }
             final List<CompanyHomeInfluencer> items =
-                snapshot.data ?? CompanyHomeViewData.influencers;
+                snapshot.data ?? const <CompanyHomeInfluencer>[];
             if (items.isEmpty) {
               return const SizedBox.shrink();
             }

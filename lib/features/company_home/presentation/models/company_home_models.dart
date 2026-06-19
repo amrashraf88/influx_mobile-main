@@ -101,6 +101,8 @@ class CompanyHomeCampaign extends Equatable {
     required this.dateLabel,
     required this.code,
     required this.progress,
+    this.influencersCount = 0,
+    this.platforms = const <String>[],
   });
 
   final String id;
@@ -111,6 +113,8 @@ class CompanyHomeCampaign extends Equatable {
   final String dateLabel;
   final String code;
   final double progress;
+  final int influencersCount;
+  final List<String> platforms;
 
   factory CompanyHomeCampaign.fromJson(Map<String, dynamic> json) {
     String pickString(List<String> keys) {
@@ -121,6 +125,91 @@ class CompanyHomeCampaign extends Equatable {
         }
       }
       return '';
+    }
+
+    int pickInt(List<String> keys) {
+      for (final String key in keys) {
+        final Object? value = json[key];
+        if (value is num) {
+          return value.toInt();
+        }
+        final int? parsed = int.tryParse(value?.toString() ?? '');
+        if (parsed != null) {
+          return parsed;
+        }
+        if (value is List) {
+          return value.length;
+        }
+      }
+      return 0;
+    }
+
+    String stringifyPlatform(Object? value) {
+      if (value is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+        for (final String key in <String>[
+          'platform',
+          'slug',
+          'name',
+          'label',
+          'value',
+          'key',
+        ]) {
+          final Object? nested = map[key];
+          if (nested != null && nested.toString().trim().isNotEmpty) {
+            return nested.toString().trim();
+          }
+        }
+      }
+      return value?.toString().trim() ?? '';
+    }
+
+    List<String> pickPlatforms() {
+      for (final String key in <String>[
+        'platforms',
+        'social_platforms',
+        'socialPlatforms',
+        'channels',
+        'socials',
+      ]) {
+        final Object? value = json[key];
+        if (value is List) {
+          return value
+              .map(stringifyPlatform)
+              .where((String platform) => platform.isNotEmpty)
+              .toSet()
+              .toList();
+        }
+        if (value is String && value.trim().isNotEmpty) {
+          return value
+              .split(RegExp(r'[,،|]'))
+              .map((String platform) => platform.trim())
+              .where((String platform) => platform.isNotEmpty)
+              .toSet()
+              .toList();
+        }
+      }
+      final List<String> inferred = <String>[];
+      for (final String key in <String>[
+        'instagram',
+        'tiktok',
+        'youtube',
+        'snapchat',
+        'twitter',
+        'facebook',
+        'whatsapp',
+      ]) {
+        if (json[key] == true ||
+            pickString(<String>[
+              '${key}_url',
+              '${key}Url',
+              '${key}_link',
+              '${key}Link',
+            ]).isNotEmpty) {
+          inferred.add(key);
+        }
+      }
+      return inferred;
     }
 
     final String statusRaw = pickString(<String>[
@@ -170,6 +259,21 @@ class CompanyHomeCampaign extends Equatable {
       ]),
       code: pickString(<String>['code', 'reference', 'ref', 'campaign_code']),
       progress: progress,
+      influencersCount: pickInt(<String>[
+        'influencers_count',
+        'influencersCount',
+        'creators_count',
+        'creatorsCount',
+        'content_creators_count',
+        'contentCreatorsCount',
+        'requests_count',
+        'requestsCount',
+        'influencers',
+        'creators',
+        'content_creators',
+        'contentCreators',
+      ]),
+      platforms: pickPlatforms(),
     );
   }
 
@@ -183,6 +287,8 @@ class CompanyHomeCampaign extends Equatable {
     dateLabel,
     code,
     progress,
+    influencersCount,
+    platforms,
   ];
 }
 

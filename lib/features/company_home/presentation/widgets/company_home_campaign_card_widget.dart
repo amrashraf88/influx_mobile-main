@@ -22,6 +22,16 @@ class CompanyHomeCampaignCardWidget extends StatelessWidget {
     final String amount = NumberFormat.decimalPattern().format(
       campaign.amountValue,
     );
+    final String detailsLabel = <String>[
+      if (campaign.influencersCount > 0)
+        '${campaign.influencersCount} influencers',
+      if (campaign.code.trim().isNotEmpty) campaign.code.trim(),
+    ].join(' · ');
+    final List<String> platforms = campaign.platforms
+        .where((String platform) => platform.trim().isNotEmpty)
+        .toSet()
+        .take(4)
+        .toList();
 
     return InkWell(
       onTap: onTap,
@@ -66,30 +76,34 @@ class CompanyHomeCampaignCardWidget extends StatelessWidget {
             SizedBox(height: 12.h),
             Row(
               children: <Widget>[
-                const _AvatarStack(),
-                SizedBox(width: 9.w),
-                Expanded(
-                  child: Text(
-                    '3 influencers · ${campaign.code}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: AppColors.textMuted,
-                      fontWeight: FontWeight.w600,
+                if (campaign.influencersCount > 0) ...<Widget>[
+                  const _AvatarStack(),
+                  SizedBox(width: 9.w),
+                ],
+                if (detailsLabel.isNotEmpty)
+                  Expanded(
+                    child: Text(
+                      detailsLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ),
+                  )
+                else
+                  const Spacer(),
               ],
             ),
             const Spacer(),
             Row(
               children: <Widget>[
-                const _PlatformDot(platform: 'instagram'),
-                SizedBox(width: 7.w),
-                const _PlatformDot(platform: 'tiktok'),
-                SizedBox(width: 7.w),
-                const _PlatformDot(platform: 'youtube'),
+                for (final String platform in platforms) ...<Widget>[
+                  _PlatformDot(platform: platform),
+                  SizedBox(width: 7.w),
+                ],
                 const Spacer(),
                 Text(
                   amount,
