@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:adzmavall/features/auth/data/auth_repository.dart';
+import 'package:adzmavall/features/company_profile/data/brand_registration_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CompanyProfileState extends Equatable {
@@ -23,9 +25,11 @@ class CompanyProfileState extends Equatable {
     this.selectedPlatforms = const <String>{},
     this.profilePicturePath = '',
     this.isSubmitted = false,
+    this.isSubmitting = false,
+    this.errorMessage,
   });
 
-  static const int lastStep = 4;
+  static const int lastStep = 2;
 
   final String phone;
   final int step;
@@ -49,6 +53,8 @@ class CompanyProfileState extends Equatable {
   /// Local file path from image picker; empty until the user picks a photo.
   final String profilePicturePath;
   final bool isSubmitted;
+  final bool isSubmitting;
+  final String? errorMessage;
 
   bool get isCurrentStepValid {
     return switch (step) {
@@ -119,6 +125,9 @@ class CompanyProfileState extends Equatable {
     Set<String>? selectedPlatforms,
     String? profilePicturePath,
     bool? isSubmitted,
+    bool? isSubmitting,
+    String? errorMessage,
+    bool clearError = false,
   }) {
     return CompanyProfileState(
       phone: phone,
@@ -144,6 +153,8 @@ class CompanyProfileState extends Equatable {
       selectedPlatforms: selectedPlatforms ?? this.selectedPlatforms,
       profilePicturePath: profilePicturePath ?? this.profilePicturePath,
       isSubmitted: isSubmitted ?? this.isSubmitted,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
 
@@ -169,30 +180,58 @@ class CompanyProfileState extends Equatable {
     selectedPlatforms,
     profilePicturePath,
     isSubmitted,
+    isSubmitting,
+    errorMessage,
   ];
 }
 
 class CompanyProfileCubit extends Cubit<CompanyProfileState> {
-  CompanyProfileCubit({required String phone})
-    : super(CompanyProfileState(phone: phone));
+  CompanyProfileCubit({
+    required String phone,
+    required BrandRegistrationRepository repository,
+  }) : _repository = repository,
+       super(CompanyProfileState(phone: phone));
 
-  void setFirstName(String value) => emit(state.copyWith(firstName: value));
-  void setLastName(String value) => emit(state.copyWith(lastName: value));
-  void setCompanyName(String value) => emit(state.copyWith(companyName: value));
-  void setBrandName(String value) => emit(state.copyWith(brandName: value));
-  void setCompanyLink(String value) => emit(state.copyWith(companyLink: value));
+  final BrandRegistrationRepository _repository;
+
+  void setFirstName(String value) {
+    emit(state.copyWith(firstName: value, clearError: true));
+  }
+
+  void setLastName(String value) {
+    emit(state.copyWith(lastName: value, clearError: true));
+  }
+
+  void setCompanyName(String value) {
+    emit(state.copyWith(companyName: value, clearError: true));
+  }
+
+  void setBrandName(String value) {
+    emit(state.copyWith(brandName: value, clearError: true));
+  }
+
+  void setCompanyLink(String value) {
+    emit(state.copyWith(companyLink: value, clearError: true));
+  }
+
   void setCommercialRegistration(String value) {
-    emit(state.copyWith(commercialRegistration: value));
+    emit(state.copyWith(commercialRegistration: value, clearError: true));
   }
 
-  void setVatNumber(String value) => emit(state.copyWith(vatNumber: value));
+  void setVatNumber(String value) {
+    emit(state.copyWith(vatNumber: value, clearError: true));
+  }
+
   void setBusinessRegisterNumber(String value) {
-    emit(state.copyWith(businessRegisterNumber: value));
+    emit(state.copyWith(businessRegisterNumber: value, clearError: true));
   }
 
-  void setTaxNumber(String value) => emit(state.copyWith(taxNumber: value));
+  void setTaxNumber(String value) {
+    emit(state.copyWith(taxNumber: value, clearError: true));
+  }
+
   void setBusinessRegisterDocument(String value) {
-    emit(state.copyWith(businessRegisterDocument: value));
+    emit(state.copyWith(businessRegisterDocument: value, clearError: true));
   }
 
   void setAddressName(String value) => emit(state.copyWith(addressName: value));
@@ -202,7 +241,7 @@ class CompanyProfileCubit extends Cubit<CompanyProfileState> {
   void setPostalCode(String value) => emit(state.copyWith(postalCode: value));
 
   void setProfilePicturePath(String path) {
-    emit(state.copyWith(profilePicturePath: path));
+    emit(state.copyWith(profilePicturePath: path, clearError: true));
   }
 
   void togglePlatform(String value) {
@@ -214,7 +253,7 @@ class CompanyProfileCubit extends Cubit<CompanyProfileState> {
   }
 
   bool nextStep() {
-    if (!state.isCurrentStepValid) {
+    if (!state.isCurrentStepValid || state.isSubmitting) {
       emit(state.copyWith(isSubmitted: true));
       return false;
     }
@@ -229,5 +268,33 @@ class CompanyProfileCubit extends Cubit<CompanyProfileState> {
     final bool valid = state.canSubmit;
     emit(state.copyWith(isSubmitted: true));
     return valid;
+  }
+
+  Future<bool> register() async {
+    if (!state.canSubmit || state.isSubmitting) {
+      emit(state.copyWith(isSubmitted: true));
+      return false;
+    }
+
+    emit(
+      state.copyWith(isSubmitted: true, isSubmitting: true, clearError: true),
+    );
+
+    try {
+      await _repository.registerBrand(state.toRegistrationDraft());
+      emit(state.copyWith(isSubmitting: false, clearError: true));
+      return true;
+    } on ApiException catch (e) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: e.message));
+      return false;
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          errorMessage: 'Could not register brand. Please try again.',
+        ),
+      );
+      return false;
+    }
   }
 }

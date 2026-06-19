@@ -165,11 +165,11 @@ class ChooseAccountTypePage extends StatelessWidget {
                                               AccountTypeOption.company) {
                                             context.push(
                                               Uri(
-                                                path: RouteNames
-                                                    .profileCompanyComplete,
+                                                path: RouteNames.authPhone,
                                                 queryParameters:
                                                     <String, String>{
                                                       'account': 'company',
+                                                      'mode': 'register',
                                                     },
                                               ).toString(),
                                             );
