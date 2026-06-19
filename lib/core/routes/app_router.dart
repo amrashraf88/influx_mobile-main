@@ -29,6 +29,7 @@ import 'package:adzmavall/features/company_shell/presentation/pages/company_shel
 import 'package:adzmavall/features/home/presentation/pages/home_page.dart';
 import 'package:adzmavall/features/influencer_chat/presentation/pages/influencer_chat_details_page.dart';
 import 'package:adzmavall/features/influencer_chat/presentation/pages/influencer_chats_page.dart';
+import 'package:adzmavall/features/influencer_home/presentation/pages/influencer_home_page.dart';
 import 'package:adzmavall/features/influencer_orders/presentation/pages/influencer_order_details_page.dart';
 import 'package:adzmavall/features/influencer_orders/presentation/pages/influencer_orders_page.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/pages/influencer_profile_page.dart';
@@ -60,9 +61,7 @@ abstract final class AppRouter {
           final String account =
               state.uri.queryParameters['account'] ?? 'influencer';
           return BlocProvider<AuthPhoneCubit>(
-            create: (_) => AuthPhoneCubit(
-              AuthRepository(DioClient.instance),
-            ),
+            create: (_) => AuthPhoneCubit(AuthRepository(DioClient.instance)),
             child: PhoneSignInPage(accountType: account),
           );
         },
@@ -157,9 +156,8 @@ abstract final class AppRouter {
             routes: <RouteBase>[
               GoRoute(
                 path: RouteNames.companyStars,
-                builder: (context, state) => const CompanyStarsPage(
-                  selectionMode: false,
-                ),
+                builder: (context, state) =>
+                    const CompanyStarsPage(selectionMode: false),
               ),
             ],
           ),
@@ -181,10 +179,6 @@ abstract final class AppRouter {
           ),
         ],
       ),
-      GoRoute(
-        path: RouteNames.influencerHome,
-        redirect: (context, state) => RouteNames.influencerOrders,
-      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return InfluencerShellPage(navigationShell: navigationShell);
@@ -193,8 +187,8 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
-                path: RouteNames.influencerProfile,
-                builder: (context, state) => const InfluencerProfilePage(),
+                path: RouteNames.influencerHome,
+                builder: (context, state) => const InfluencerHomePage(),
               ),
             ],
           ),
@@ -203,6 +197,14 @@ abstract final class AppRouter {
               GoRoute(
                 path: RouteNames.influencerOrders,
                 builder: (context, state) => const InfluencerOrdersPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: RouteNames.influencerProfile,
+                builder: (context, state) => const InfluencerProfilePage(),
               ),
             ],
           ),
@@ -254,9 +256,8 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: RouteNames.companyStarsBrowse,
-        builder: (context, state) => const CompanyStarsPage(
-          selectionMode: true,
-        ),
+        builder: (context, state) =>
+            const CompanyStarsPage(selectionMode: true),
       ),
       GoRoute(
         path: RouteNames.companyStarProfile,
