@@ -35,6 +35,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _street = TextEditingController();
   final TextEditingController _mawthooq = TextEditingController();
   final TextEditingController _phone = TextEditingController();
+  final TextEditingController _bio = TextEditingController();
 
   // Gender is required by the profile-update endpoint.
   static const List<LookupItem> _genders = <LookupItem>[
@@ -89,6 +90,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _phone.text = _str(p['phone_number']).isNotEmpty
           ? _str(p['phone_number'])
           : _str(p['phone']);
+      _bio.text = <String>['bio', 'about', 'description']
+          .map((String k) => _str(p[k]))
+          .firstWhere((String s) => s.isNotEmpty, orElse: () => '');
       _city = _valueOf(p['city']);
       _direction = _valueOf(p['city_direction']);
       _gender = _valueOf(p['gender'])?.toLowerCase();
@@ -154,6 +158,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // Required by the backend (validation.required otherwise).
       if (_gender != null && _gender!.isNotEmpty) 'gender': _gender,
       'phone_number': _phone.text.trim(),
+      'bio': _bio.text.trim(),
       'categories': _selectedCategories
           .map(int.tryParse)
           .whereType<int>()
@@ -184,6 +189,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _street.dispose();
     _mawthooq.dispose();
     _phone.dispose();
+    _bio.dispose();
     super.dispose();
   }
 
@@ -259,6 +265,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         (String? v) => setState(() => _direction = v),
                       ),
                     _field('Street', _street),
+                    _field('Bio', _bio, maxLines: 4),
                     _field('Mawthooq License Number', _mawthooq),
                     if (_categories.isNotEmpty) ...<Widget>[
                       Text(
@@ -354,6 +361,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     String label,
     TextEditingController controller, {
     TextInputType? keyboard,
+    int maxLines = 1,
   }) {
     return Padding(
       padding: EdgeInsets.only(bottom: 16.h),
@@ -378,7 +386,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             child: TextField(
               controller: controller,
-              keyboardType: keyboard,
+              keyboardType: maxLines > 1
+                  ? TextInputType.multiline
+                  : keyboard,
+              maxLines: maxLines,
               decoration: InputDecoration(
                 isCollapsed: true,
                 border: InputBorder.none,
