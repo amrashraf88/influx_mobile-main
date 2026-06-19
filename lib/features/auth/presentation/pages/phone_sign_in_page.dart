@@ -457,30 +457,34 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
                                             ),
                                           ),
                                           SizedBox(height: 18.h),
-                                          if (widget.accountType !=
-                                              'company') ...<Widget>[
-                                            TextButton(
-                                              onPressed: state.isLoading
-                                                  ? null
-                                                  : () {
-                                                      context.push(
-                                                        RouteNames
-                                                            .authCreatorType,
-                                                      );
-                                                    },
-                                              child: Text(
-                                                isArabic
-                                                    ? 'تسجيل جديد كصانع محتوى'
-                                                    : 'New creator registration',
-                                                style: TextStyle(
-                                                  color: AppColors.brandBlue,
-                                                  fontSize: 14.sp,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
+                                          TextButton(
+                                            onPressed: state.isLoading
+                                                ? null
+                                                : () {
+                                                    context.push(
+                                                      Uri(
+                                                        path: RouteNames
+                                                            .authAccountType,
+                                                        queryParameters:
+                                                            <String, String>{
+                                                              'mode':
+                                                                  'register',
+                                                            },
+                                                      ).toString(),
+                                                    );
+                                                  },
+                                            child: Text(
+                                              isArabic
+                                                  ? 'جديد هنا؟ إنشاء حساب'
+                                                  : 'New here? Create account',
+                                              style: TextStyle(
+                                                color: AppColors.brandBlue,
+                                                fontSize: 14.sp,
+                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
-                                            SizedBox(height: 8.h),
-                                          ],
+                                          ),
+                                          SizedBox(height: 8.h),
                                           Text(
                                             'By Clicking Continue, you agree to\nAdz Mavall Agreement',
                                             textAlign: TextAlign.center,

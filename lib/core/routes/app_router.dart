@@ -51,10 +51,13 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: RouteNames.authAccountType,
-        builder: (context, state) => BlocProvider<AccountTypeCubit>(
-          create: (_) => AccountTypeCubit(),
-          child: const ChooseAccountTypePage(),
-        ),
+        builder: (context, state) {
+          final String? mode = state.uri.queryParameters['mode'];
+          return BlocProvider<AccountTypeCubit>(
+            create: (_) => AccountTypeCubit(),
+            child: ChooseAccountTypePage(mode: mode),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.authCreatorType,

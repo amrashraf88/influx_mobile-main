@@ -11,7 +11,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class ChooseAccountTypePage extends StatelessWidget {
-  const ChooseAccountTypePage({super.key});
+  const ChooseAccountTypePage({super.key, this.mode});
+
+  final String? mode;
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +160,26 @@ class ChooseAccountTypePage extends StatelessWidget {
                                             .read<AccountTypeCubit>()
                                             .state
                                             .selected;
+                                        if (mode == 'register') {
+                                          if (type ==
+                                              AccountTypeOption.company) {
+                                            context.push(
+                                              Uri(
+                                                path: RouteNames
+                                                    .profileCompanyComplete,
+                                                queryParameters:
+                                                    <String, String>{
+                                                      'account': 'company',
+                                                    },
+                                              ).toString(),
+                                            );
+                                          } else {
+                                            context.push(
+                                              RouteNames.authCreatorType,
+                                            );
+                                          }
+                                          return;
+                                        }
                                         context.push(
                                           Uri(
                                             path: RouteNames.authPhone,

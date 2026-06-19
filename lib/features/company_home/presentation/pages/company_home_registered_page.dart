@@ -1,6 +1,7 @@
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/localization/app_strings.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/core/routes/route_names.dart';
 import 'package:adzmavall/features/company_home/data/company_home_repository.dart';
 import 'package:adzmavall/features/company_home/data/company_home_view_data.dart';
 import 'package:adzmavall/features/company_home/presentation/models/company_home_models.dart';
@@ -14,6 +15,7 @@ import 'package:adzmavall/utils/appcolors.dart';
 import 'package:adzmavall/utils/imageassets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 /// Home shown to a registered company (after profile completion).
 ///
@@ -180,6 +182,7 @@ class _Body extends StatelessWidget {
           top: headerHeight - 30.h,
           bottom: 0,
           child: _Sections(
+            summary: summary,
             campaignsFuture: campaignsFuture,
             categoriesFuture: categoriesFuture,
             influencersFuture: influencersFuture,
@@ -228,11 +231,13 @@ class _Body extends StatelessWidget {
 
 class _Sections extends StatelessWidget {
   const _Sections({
+    required this.summary,
     required this.campaignsFuture,
     required this.categoriesFuture,
     required this.influencersFuture,
   });
 
+  final CompanyHomeSummary summary;
   final Future<List<CompanyHomeCampaign>> campaignsFuture;
   final Future<List<CompanyHomeCategory>> categoriesFuture;
   final Future<List<CompanyHomeInfluencer>> influencersFuture;
@@ -244,6 +249,8 @@ class _Sections extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          _WelcomeBanner(summary: summary),
+          SizedBox(height: 22.h),
           HomeSectionTitleRowWidget(
             titleKey: 'company_home_section_current_campaign',
             trailingKey: 'company_home_see_all',
@@ -268,6 +275,92 @@ class _Sections extends StatelessWidget {
           SizedBox(height: 12.h),
           _InfluencersGrid(future: influencersFuture),
           SizedBox(height: 24.h),
+          const _TrendingSection(),
+          SizedBox(height: 24.h),
+          const _WhyAdzMavallSection(),
+          SizedBox(height: 24.h),
+        ],
+      ),
+    );
+  }
+}
+
+class _WelcomeBanner extends StatelessWidget {
+  const _WelcomeBanner({required this.summary});
+
+  final CompanyHomeSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[Color(0xFF1B7FEC), Color(0xFF0B5FCB)],
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+            right: -36.w,
+            top: -42.h,
+            child: Container(
+              width: 150.w,
+              height: 150.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Good morning, ${summary.brandTitle}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              SizedBox(
+                width: 230.w,
+                child: Text(
+                  'Launch campaigns, discover creators, and manage collaborations in one place.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.86),
+                    fontSize: 12.5.sp,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              SizedBox(height: 14.h),
+              FilledButton(
+                onPressed: () => context.go(RouteNames.companyCampaigns),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF0066D6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 18.w,
+                    vertical: 10.h,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(11.r),
+                  ),
+                ),
+                child: const Text('View campaigns'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -423,6 +516,216 @@ class _InfluencersGrid extends StatelessWidget {
               },
             );
           },
+    );
+  }
+}
+
+class _TrendingSection extends StatelessWidget {
+  const _TrendingSection();
+
+  static const List<String> _tags = <String>[
+    '#fashion',
+    '#sponsoredpost',
+    '#collabwithme',
+    '#topbrand',
+    '#influencerlife',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Trending',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: 12.h),
+        Wrap(
+          spacing: 9.w,
+          runSpacing: 9.h,
+          children: _tags
+              .map(
+                (String tag) => Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF3FB),
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      color: const Color(0xFF3B6CB3),
+                      fontSize: 12.5.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        SizedBox(height: 14.h),
+        SizedBox(
+          height: 156.h,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: 2,
+            separatorBuilder: (_, _) => SizedBox(width: 12.w),
+            itemBuilder: (BuildContext context, int index) {
+              final bool first = index == 0;
+              return Container(
+                width: 250.w,
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: first
+                      ? const Color(0xFF111827)
+                      : const Color(0xFF1D4ED8),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      first
+                          ? 'New Style Drop · SS26'
+                          : 'Marula Lipstick Launch',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      first ? '124k Likes · 3,238 Comments' : '88k Likes',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 11.5.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WhyAdzMavallSection extends StatelessWidget {
+  const _WhyAdzMavallSection();
+
+  static const List<({IconData icon, String label})>
+  _items = <({IconData icon, String label})>[
+    (icon: Icons.auto_awesome_rounded, label: 'Create your campaign with AI'),
+    (icon: Icons.description_outlined, label: 'Brief files for every creator'),
+    (icon: Icons.dashboard_outlined, label: 'All your campaigns in one place'),
+    (icon: Icons.bar_chart_rounded, label: 'Post-campaign reports'),
+    (icon: Icons.verified_user_outlined, label: 'Secure documented payment'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: Offset(0, 6.h),
+          ),
+        ],
+      ),
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 8.h),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    'Why Adz Mavall?',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 6.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.brandBlue,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    'Company',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final item in _items)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 40.w,
+                    height: 40.w,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF2FE),
+                      borderRadius: BorderRadius.circular(11.r),
+                    ),
+                    child: Icon(
+                      item.icon,
+                      color: AppColors.brandBlue,
+                      size: 20.sp,
+                    ),
+                  ),
+                  SizedBox(width: 14.w),
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      style: TextStyle(
+                        color: const Color(0xFF2A3550),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_right_rounded,
+                    color: const Color(0xFFC2C9D6),
+                    size: 20.sp,
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(height: 8.h),
+        ],
+      ),
     );
   }
 }
