@@ -162,7 +162,8 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
         final String icon = ApiMedia.resolve(
           pick(<String>['platform_icon_asset', 'platform_icon']),
         );
-        return icon.isNotEmpty ? icon : ImageAssets.homeInfluencerTiktok;
+        if (icon.isNotEmpty) return icon;
+        return _platformIconAsset(pick(<String>['platform_name', 'platform']));
       }(),
       priceLabel: price,
       deliveryDateLabel: pick(<String>[
@@ -180,6 +181,64 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
 
   static String _s(Object? v) =>
       (v == null || v.toString() == 'null') ? '' : v.toString();
+
+  /// Maps a platform name (English or Arabic) to its icon asset.
+  static String _platformIconAsset(String rawName) {
+    final String name = rawName.trim();
+    final String s = name.toLowerCase();
+    bool has(List<String> needles) =>
+        needles.any((String n) => s.contains(n) || name.contains(n));
+
+    if (has(<String>[
+      'instagram',
+      'insta',
+      'إنستقرام',
+      'انستقرام',
+      'إنستجرام',
+      'انستجرام',
+      'انستغرام',
+    ])) {
+      return ImageAssets.instagramColoredIcon;
+    }
+    if (has(<String>['tiktok', 'tik tok', 'tik_tok', 'تيك توك', 'تيكتوك'])) {
+      return ImageAssets.homeInfluencerTiktok;
+    }
+    if (has(<String>['snap', 'سناب'])) {
+      return ImageAssets.snapchatIcon;
+    }
+    if (has(<String>['youtube', 'يوتيوب', 'يوتوب'])) {
+      return ImageAssets.homeInfluencerYoutube;
+    }
+    if (has(<String>['whatsapp', 'whats', 'واتس', 'واتساب'])) {
+      return ImageAssets.whatsappColoredIcon;
+    }
+    if (has(<String>['telegram', 'تيليجرام', 'تليجرام', 'تلجرام'])) {
+      return ImageAssets.telegramColoredIcon;
+    }
+    if (has(<String>['threads', 'ثريد'])) {
+      return ImageAssets.threadsIcon;
+    }
+    if (has(<String>['facebook', 'فيس بوك', 'فيسبوك'])) {
+      return ImageAssets.homeInfluencerFacebook;
+    }
+    if (has(<String>['twitter', 'تويتر', 'إكس', 'اكس'])) {
+      return ImageAssets.twitterIcon;
+    }
+    return ImageAssets.instagramColoredIcon;
+  }
+
+  /// Parses a money string ("10500", "10,500", "$75.50") to a number.
+  static num? _money(Object? v) {
+    final String s = _s(v);
+    if (s.isEmpty) return null;
+    return num.tryParse(s.replaceAll(RegExp(r'[^0-9.\-]'), ''));
+  }
+
+  /// Formats a number back to a plain string (no decimals when whole).
+  static String _fmtMoney(num n) {
+    if (n == n.roundToDouble()) return n.toInt().toString();
+    return n.toStringAsFixed(2);
+  }
 
   static List<String> _stringList(Object? v) {
     if (v is List) {
@@ -261,14 +320,31 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
               );
             })
             .toList();
+    // Listing fee and VAT are both 15%. The backend sometimes returns 0 for
+    // them, so compute from the order total when that happens.
+    const double listingRate = 0.15;
+    const double vatRate = 0.15;
+
+    final num base =
+        _money(m['total_order']) ?? _money(m['platform_total']) ?? 0;
+    final num apiListing = _money(m['listing_fee']) ?? 0;
+    final num listing = apiListing > 0 ? apiListing : base * listingRate;
+    final num beforeVat = _money(m['total_before_vat']) ?? base;
+    final num apiTax = _money(m['tax_amount']) ?? 0;
+    final num tax = apiTax > 0 ? apiTax : beforeVat * vatRate;
+    final num apiWithTax = _money(m['total_with_tax']) ?? 0;
+    final num withTax = (apiTax > 0 && apiWithTax > 0)
+        ? apiWithTax
+        : beforeVat + tax;
+
     return InfluencerOrderFinancial(
       platformTotal: _s(m['platform_total']),
       items: items,
-      totalOrder: _s(m['total_order']),
-      listingFee: _s(m['listing_fee']),
-      totalBeforeVat: _s(m['total_before_vat']),
-      taxAmount: _s(m['tax_amount']),
-      totalWithTax: _s(m['total_with_tax']),
+      totalOrder: _fmtMoney(base),
+      listingFee: _fmtMoney(listing),
+      totalBeforeVat: _fmtMoney(beforeVat),
+      taxAmount: _fmtMoney(tax),
+      totalWithTax: _fmtMoney(withTax),
       deposit: _s(m['deposit']),
       released: _s(m['released']),
     );
