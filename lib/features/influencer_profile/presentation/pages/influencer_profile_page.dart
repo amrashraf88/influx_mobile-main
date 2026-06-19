@@ -1,9 +1,12 @@
+import 'package:adzmavall/core/lookup/lookup_item.dart';
+import 'package:adzmavall/core/lookup/lookup_repository.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
 import 'package:adzmavall/features/influencer_profile/data/creator_profile_repository.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/models/creator_profile_tab_data.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/models/influencer_profile_view_data.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/profile_refresh_notifier.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/creator_profile_form_sheets.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_profile_panels.dart';
@@ -61,6 +64,19 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
   void initState() {
     super.initState();
     _reload();
+    influencerProfileRefresh.addListener(_onRefreshSignal);
+  }
+
+  @override
+  void dispose() {
+    influencerProfileRefresh.removeListener(_onRefreshSignal);
+    super.dispose();
+  }
+
+  void _onRefreshSignal() {
+    // Re-entry to the Profile tab or a saved edit elsewhere: refetch, but not
+    // while a write is in flight (that path reloads on its own).
+    if (!_busy) _reload();
   }
 
   Future<void> _reload() async {
@@ -141,50 +157,126 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
   }
 
   Future<void> _addAccount() async {
+    // The backend validates `platform` against the social-platforms lookup, so
+    // load the real options and send the lookup value (not the display label).
+    List<LookupItem> platforms = const <LookupItem>[];
+    try {
+      platforms = await LookupRepository(
+        DioClient.instance,
+      ).fetchSocialPlatforms();
+    } on Object {
+      // Fall back to the static labels below.
+    }
+    if (!mounted) return;
+    final List<String> options = platforms.isNotEmpty
+        ? platforms.map((LookupItem p) => p.label).toList()
+        : _platformOptions;
+
     final Map<String, String>? r = await showCreatorFormSheet(
       context,
       title: 'Add account',
-      fields: const <CreatorFormField>[
-        CreatorFormField(
-          key: 'platform',
-          label: 'Platform',
-          options: _platformOptions,
+      fields: <CreatorFormField>[
+        CreatorFormField(key: 'platform', label: 'Platform', options: options),
+        const CreatorFormField(
+          key: 'username',
+          label: 'Username',
+          hint: '@username',
         ),
-        CreatorFormField(key: 'username', label: 'Username', hint: '@username'),
-        CreatorFormField(
+        const CreatorFormField(
           key: 'followers_count',
           label: 'Followers',
           number: true,
         ),
-        CreatorFormField(key: 'url', label: 'Profile link', hint: 'https://'),
+        const CreatorFormField(
+          key: 'profile_url',
+          label: 'Profile link',
+          hint: 'https://',
+        ),
       ],
     );
     if (r == null) return;
+
+    final String chosen = r['platform'] ?? '';
+    Object? platformValue = chosen.toLowerCase();
+    for (final LookupItem p in platforms) {
+      if (p.label == chosen) {
+        platformValue = int.tryParse(p.value) ?? p.value;
+        break;
+      }
+    }
+
     final Map<String, dynamic> body = <String, dynamic>{
-      'platform': r['platform'],
+      'platform': platformValue,
       if (_has(r['username'])) 'username': r['username'],
       if (_has(r['followers_count']))
         'followers_count': int.tryParse(r['followers_count']!),
-      if (_has(r['url'])) 'url': r['url'],
+      if (_has(r['profile_url'])) 'profile_url': r['profile_url'],
     };
     await _runWrite(() => _repo.createSocialAccount(body));
   }
 
   Future<void> _addClient() async {
+    // A client links to a company from the lookup; the backend also requires
+    // number_of_times, have_contract, public_status and privacy.
+    List<LookupItem> companies = const <LookupItem>[];
+    try {
+      companies = await LookupRepository(DioClient.instance).fetchCompanies();
+    } on Object {
+      // Handled below.
+    }
+    if (!mounted) return;
+    if (companies.isEmpty) {
+      _toast('No companies available to link right now.');
+      return;
+    }
+
     final Map<String, String>? r = await showCreatorFormSheet(
       context,
       title: 'Add client',
-      fields: const <CreatorFormField>[
-        CreatorFormField(key: 'name', label: 'Client name'),
-        CreatorFormField(key: 'handle', label: 'Handle', hint: '@handle'),
-        CreatorFormField(key: 'logo_url', label: 'Logo URL', hint: 'https://'),
+      fields: <CreatorFormField>[
+        CreatorFormField(
+          key: 'company',
+          label: 'Company',
+          options: companies.map((LookupItem c) => c.label).toList(),
+        ),
+        const CreatorFormField(
+          key: 'number_of_times',
+          label: 'Number of times worked together',
+          number: true,
+        ),
+        const CreatorFormField(
+          key: 'have_contract',
+          label: 'Have contract',
+          options: <String>['Yes', 'No'],
+        ),
+        const CreatorFormField(
+          key: 'public_status',
+          label: 'Show publicly',
+          options: <String>['Yes', 'No'],
+        ),
+        const CreatorFormField(
+          key: 'privacy',
+          label: 'Privacy',
+          options: <String>['public', 'private'],
+        ),
       ],
     );
     if (r == null) return;
+
+    Object? companyId;
+    for (final LookupItem c in companies) {
+      if (c.label == r['company']) {
+        companyId = int.tryParse(c.value) ?? c.value;
+        break;
+      }
+    }
+
     final Map<String, dynamic> body = <String, dynamic>{
-      'name': r['name'],
-      if (_has(r['handle'])) 'handle': r['handle'],
-      if (_has(r['logo_url'])) 'logo_url': r['logo_url'],
+      if (companyId != null) 'company_id': companyId,
+      'number_of_times': int.tryParse(r['number_of_times'] ?? '') ?? 0,
+      'have_contract': r['have_contract'] == 'Yes',
+      'public_status': r['public_status'] == 'Yes',
+      'privacy': r['privacy'] ?? 'public',
     };
     await _runWrite(() => _repo.createClient(body));
   }

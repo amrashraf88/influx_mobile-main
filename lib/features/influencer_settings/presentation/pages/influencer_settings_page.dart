@@ -3,6 +3,7 @@ import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/routes/route_names.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/pages/edit_profile_page.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/profile_refresh_notifier.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
 import 'package:adzmavall/features/influencer_settings/data/settings_repository.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/influencer_settings_static_menu.dart';
@@ -37,6 +38,13 @@ class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
   void initState() {
     super.initState();
     _loadProfile();
+    influencerProfileRefresh.addListener(_loadProfile);
+  }
+
+  @override
+  void dispose() {
+    influencerProfileRefresh.removeListener(_loadProfile);
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {

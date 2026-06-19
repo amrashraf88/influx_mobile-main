@@ -1,4 +1,5 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/profile_refresh_notifier.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -29,6 +30,11 @@ class InfluencerShellPage extends StatelessWidget {
     final int? branchIndex = _branchIndexByNavIndex[navIndex];
     if (branchIndex == null) {
       return;
+    }
+
+    // Profile (2) and Settings (4) share the live profile — refetch on entry.
+    if (branchIndex == 2 || branchIndex == 4) {
+      requestInfluencerProfileRefresh();
     }
 
     navigationShell.goBranch(

@@ -3,6 +3,7 @@ import 'package:adzmavall/core/lookup/lookup_repository.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
 import 'package:adzmavall/features/influencer_profile/data/profile_edit_repository.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/profile_refresh_notifier.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -140,6 +141,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     };
     try {
       await _repo.updateProfile(body);
+      // Tell the Profile / Settings screens to refetch fresh data.
+      requestInfluencerProfileRefresh();
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
