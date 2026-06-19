@@ -43,13 +43,46 @@ class _EditProfilePageState extends State<EditProfilePage> {
     LookupItem(value: 'female', label: 'Female'),
   ];
 
+  static const List<LookupItem> _yesNo = <LookupItem>[
+    LookupItem(value: 'yes', label: 'Yes'),
+    LookupItem(value: 'no', label: 'No'),
+  ];
+
+  static const List<LookupItem> _nationalities = <LookupItem>[
+    LookupItem(value: 'saudi', label: 'Saudi'),
+    LookupItem(value: 'uae', label: 'UAE'),
+    LookupItem(value: 'egypt', label: 'Egypt'),
+  ];
+
   List<LookupItem> _cities = <LookupItem>[];
   List<LookupItem> _directions = <LookupItem>[];
   List<LookupItem> _categories = <LookupItem>[];
+  List<LookupItem> _sizes = <LookupItem>[];
+  List<LookupItem> _skinTones = <LookupItem>[];
+  List<LookupItem> _accents = <LookupItem>[];
+
+  String _creatorType = 'influencer';
+
+  // Type-specific controllers.
+  final TextEditingController _height = TextEditingController();
+  final TextEditingController _weight = TextEditingController();
+  final TextEditingController _sessionPrice = TextEditingController();
+  final TextEditingController _videoPrice = TextEditingController();
+  final TextEditingController _deliveryTime = TextEditingController();
+  final TextEditingController _clipPrice = TextEditingController();
 
   String? _city;
   String? _direction;
   String? _gender;
+  String? _nationality;
+  String? _size;
+  String? _skinTone;
+  String? _accent;
+  String? _faceVisible;
+  String? _showHair;
+  String? _bodyVisible;
+  String? _voiceOver;
+  String? _useHook;
   final Set<String> _selectedCategories = <String>{};
 
   bool _loading = true;
@@ -82,6 +115,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _categories = (await _lookups.fetchCategories()).items;
       } catch (_) {}
 
+      _creatorType = <String>['creator_type', 'creatorType', 'type']
+          .map((String k) => _str(p[k]))
+          .firstWhere((String s) => s.isNotEmpty, orElse: () => 'influencer')
+          .toLowerCase();
+
+      // Type-specific lookups (best-effort).
+      if (_creatorType == 'model') {
+        try {
+          _sizes = await _lookups.fetchModelCreatorSizes();
+        } catch (_) {}
+        try {
+          _skinTones = await _lookups.fetchModelCreatorSkinTones();
+        } catch (_) {}
+      } else if (_creatorType == 'collage') {
+        try {
+          _accents = await _lookups.fetchModelCreatorAccents();
+        } catch (_) {}
+      }
+
       _fullName.text = _str(p['full_name']);
       _fullNameAr.text = _str(p['full_name_ar']);
       _age.text = _str(p['age']);
@@ -96,6 +148,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _city = _valueOf(p['city']);
       _direction = _valueOf(p['city_direction']);
       _gender = _valueOf(p['gender'])?.toLowerCase();
+
+      // Type-specific fields.
+      _height.text = _str(p['height']).isNotEmpty
+          ? _str(p['height'])
+          : _str(p['height_cm']);
+      _weight.text = _str(p['weight']).isNotEmpty
+          ? _str(p['weight'])
+          : _str(p['weight_kg']);
+      _sessionPrice.text = _str(p['session_price_per_hour']);
+      _videoPrice.text = _str(p['video_price']);
+      _deliveryTime.text = _str(p['deliverability_time']).isNotEmpty
+          ? _str(p['deliverability_time'])
+          : _str(p['delivery_time_from_arrival']);
+      _clipPrice.text = _str(p['clip_price_per_second']);
+      _nationality = _valueOf(p['nationality'])?.toLowerCase();
+      _size = _valueOf(p['size']);
+      _skinTone = _valueOf(p['skin_tone']);
+      _accent = _valueOf(p['accent']);
+      _faceVisible = _yesNoStr(p['face_visibility']);
+      _showHair = _yesNoStr(p['show_hair']);
+      _bodyVisible = _yesNoStr(p['body_visibility']);
+      _voiceOver = _yesNoStr(p['voice_over']);
+      _useHook = _yesNoStr(p['use_hook']);
       final Object? cats = p['categories'];
       if (cats is List) {
         for (final Object? c in cats) {
@@ -114,6 +189,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   String _str(Object? v) =>
       (v == null || v.toString() == 'null') ? '' : v.toString();
+
+  /// Normalises a boolean-ish value to 'yes' / 'no' (or null when unknown).
+  String? _yesNoStr(Object? v) {
+    if (v == null) return null;
+    if (v is bool) return v ? 'yes' : 'no';
+    final String s = v.toString().toLowerCase().trim();
+    if (s == 'yes' || s == 'true' || s == '1') return 'yes';
+    if (s == 'no' || s == 'false' || s == '0') return 'no';
+    return null;
+  }
 
   /// The Mawthooq number is nested under `mawthooq_profile` in the API
   /// response, with a few flat fallbacks.
@@ -151,10 +236,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'full_name_ar': _fullNameAr.text.trim(),
       if (int.tryParse(_age.text.trim()) != null)
         'age': int.parse(_age.text.trim()),
-      'street': _street.text.trim(),
-      'mawthooq_license_number': _mawthooq.text.trim(),
       if (_city != null) 'city': _city,
-      if (_direction != null) 'city_direction': _direction,
       // Required by the backend (validation.required otherwise).
       if (_gender != null && _gender!.isNotEmpty) 'gender': _gender,
       'phone_number': _phone.text.trim(),
@@ -164,6 +246,47 @@ class _EditProfilePageState extends State<EditProfilePage> {
           .whereType<int>()
           .toList(),
     };
+
+    void putInt(String key, TextEditingController c) {
+      final int? n = int.tryParse(c.text.trim());
+      if (n != null) body[key] = n;
+    }
+
+    void putStr(String key, String value) {
+      if (value.trim().isNotEmpty) body[key] = value.trim();
+    }
+
+    switch (_creatorType) {
+      case 'model':
+        if (_nationality != null) body['nationality'] = _nationality;
+        putInt('height', _height);
+        putInt('weight', _weight);
+        if (_size != null) body['size'] = _size;
+        if (_skinTone != null) body['skin_tone'] = _skinTone;
+        putInt('session_price_per_hour', _sessionPrice);
+        if (_bodyVisible != null) body['body_visibility'] = _bodyVisible;
+        if (_faceVisible != null) body['face_visibility'] = _faceVisible;
+        if (_showHair != null) body['show_hair'] = _showHair;
+        if (_direction != null) body['city_direction'] = _direction;
+        putStr('street', _street.text);
+      case 'ugc':
+        putInt('video_price', _videoPrice);
+        putInt('deliverability_time', _deliveryTime);
+        if (_voiceOver != null) body['voice_over'] = _voiceOver;
+        if (_useHook != null) body['use_hook'] = _useHook;
+        if (_faceVisible != null) body['face_visibility'] = _faceVisible;
+        if (_showHair != null) body['show_hair'] = _showHair;
+      case 'collage':
+        putInt('clip_price_per_second', _clipPrice);
+        if (_accent != null) body['accent'] = _accent;
+        if (_direction != null) body['city_direction'] = _direction;
+        putStr('street', _street.text);
+      default: // influencer
+        if (_direction != null) body['city_direction'] = _direction;
+        putStr('street', _street.text);
+        final String mawthooq = _mawthooq.text.trim();
+        if (mawthooq.isNotEmpty) body['mawthooq_license_number'] = mawthooq;
+    }
     try {
       await _repo.updateProfile(body);
       // Tell the Profile / Settings screens to refetch fresh data.
@@ -190,6 +313,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _mawthooq.dispose();
     _phone.dispose();
     _bio.dispose();
+    _height.dispose();
+    _weight.dispose();
+    _sessionPrice.dispose();
+    _videoPrice.dispose();
+    _deliveryTime.dispose();
+    _clipPrice.dispose();
     super.dispose();
   }
 
@@ -266,7 +395,113 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     _field('Street', _street),
                     _field('Bio', _bio, maxLines: 4),
-                    _field('Mawthooq License Number', _mawthooq),
+                    if (_creatorType == 'influencer')
+                      _field('Mawthooq License Number', _mawthooq),
+                    if (_creatorType == 'model') ...<Widget>[
+                      _dropdown(
+                        'Nationality',
+                        _nationalities,
+                        _nationality,
+                        (String? v) => setState(() => _nationality = v),
+                      ),
+                      _field(
+                        'Height (cm)',
+                        _height,
+                        keyboard: TextInputType.number,
+                      ),
+                      _field(
+                        'Weight (kg)',
+                        _weight,
+                        keyboard: TextInputType.number,
+                      ),
+                      if (_sizes.isNotEmpty)
+                        _dropdown(
+                          'Size',
+                          _sizes,
+                          _size,
+                          (String? v) => setState(() => _size = v),
+                        ),
+                      if (_skinTones.isNotEmpty)
+                        _dropdown(
+                          'Skin tone',
+                          _skinTones,
+                          _skinTone,
+                          (String? v) => setState(() => _skinTone = v),
+                        ),
+                      _field(
+                        'Session price / hour',
+                        _sessionPrice,
+                        keyboard: TextInputType.number,
+                      ),
+                      _dropdown(
+                        'Full body visible',
+                        _yesNo,
+                        _bodyVisible,
+                        (String? v) => setState(() => _bodyVisible = v),
+                      ),
+                      _dropdown(
+                        'Face visible',
+                        _yesNo,
+                        _faceVisible,
+                        (String? v) => setState(() => _faceVisible = v),
+                      ),
+                      _dropdown(
+                        'Hair visible',
+                        _yesNo,
+                        _showHair,
+                        (String? v) => setState(() => _showHair = v),
+                      ),
+                    ],
+                    if (_creatorType == 'ugc') ...<Widget>[
+                      _field(
+                        'Video price',
+                        _videoPrice,
+                        keyboard: TextInputType.number,
+                      ),
+                      _field(
+                        'Delivery time (from arrival)',
+                        _deliveryTime,
+                        keyboard: TextInputType.number,
+                      ),
+                      _dropdown(
+                        'Voice over',
+                        _yesNo,
+                        _voiceOver,
+                        (String? v) => setState(() => _voiceOver = v),
+                      ),
+                      _dropdown(
+                        'Use hook',
+                        _yesNo,
+                        _useHook,
+                        (String? v) => setState(() => _useHook = v),
+                      ),
+                      _dropdown(
+                        'Face visible',
+                        _yesNo,
+                        _faceVisible,
+                        (String? v) => setState(() => _faceVisible = v),
+                      ),
+                      _dropdown(
+                        'Hair visible',
+                        _yesNo,
+                        _showHair,
+                        (String? v) => setState(() => _showHair = v),
+                      ),
+                    ],
+                    if (_creatorType == 'collage') ...<Widget>[
+                      _field(
+                        'Clip price / second',
+                        _clipPrice,
+                        keyboard: TextInputType.number,
+                      ),
+                      if (_accents.isNotEmpty)
+                        _dropdown(
+                          'Accent',
+                          _accents,
+                          _accent,
+                          (String? v) => setState(() => _accent = v),
+                        ),
+                    ],
                     if (_categories.isNotEmpty) ...<Widget>[
                       Text(
                         'Categories',
