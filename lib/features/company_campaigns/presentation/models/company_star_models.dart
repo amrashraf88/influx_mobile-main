@@ -458,6 +458,10 @@ class CompanyStarProfile extends Equatable {
     required this.coverImageUrl,
     required this.mawthooqLabel,
     required this.adPrices,
+    this.creatorTypeValue = 'influencer',
+    this.categories = const <String>[],
+    this.works = const <CompanyStarWorkItem>[],
+    this.rawProfile = const <String, dynamic>{},
   });
 
   final String id;
@@ -468,6 +472,10 @@ class CompanyStarProfile extends Equatable {
   final String coverImageUrl;
   final String mawthooqLabel;
   final List<CompanyStarAdPriceLine> adPrices;
+  final String creatorTypeValue;
+  final List<String> categories;
+  final List<CompanyStarWorkItem> works;
+  final Map<String, dynamic> rawProfile;
 
   @override
   List<Object?> get props => <Object?>[
@@ -479,7 +487,26 @@ class CompanyStarProfile extends Equatable {
     coverImageUrl,
     mawthooqLabel,
     adPrices,
+    creatorTypeValue,
+    categories,
+    works,
+    rawProfile,
   ];
+}
+
+class CompanyStarWorkItem extends Equatable {
+  const CompanyStarWorkItem({
+    required this.id,
+    required this.title,
+    required this.imageUrl,
+  });
+
+  final String id;
+  final String title;
+  final String imageUrl;
+
+  @override
+  List<Object?> get props => <Object?>[id, title, imageUrl];
 }
 
 class CompanyRequestAdPlatform extends Equatable {

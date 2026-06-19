@@ -110,6 +110,9 @@ class CompanyStarsRepository {
         _pickFromMaps(profileMaps, keys, fallback);
 
     final List<CompanyStarAdPriceLine> adPrices = _parseAdPrices(json);
+    final String creatorType = _creatorTypeFrom(
+      pick(<String>['creator_type', 'creatorType', 'type', 'category'], ''),
+    );
 
     return CompanyStarProfile(
       id: pick(<String>['id', 'uuid'], base.id),
@@ -164,7 +167,119 @@ class CompanyStarsRepository {
         'licenseNumber',
       ], base.mawthooqLabel),
       adPrices: adPrices,
+      creatorTypeValue: creatorType.isNotEmpty
+          ? creatorType
+          : base.creatorTypeValue,
+      categories: _parseStringList(json, <String>[
+        'categories',
+        'tags',
+        'keywords',
+        'interests',
+        'niches',
+      ]),
+      works: _parseWorks(json),
+      rawProfile: json,
     );
+  }
+
+  static String _creatorTypeFrom(String raw) {
+    final String value = raw.trim().toLowerCase();
+    if (value.contains('ugc') || value.contains('user generated')) return 'ugc';
+    if (value.contains('collage') || value.contains('college')) {
+      return 'collage';
+    }
+    if (value.contains('model')) return 'model';
+    if (value.contains('influencer')) return 'influencer';
+    return value;
+  }
+
+  static List<String> _parseStringList(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    final List<String> values = <String>[];
+    void add(Object? value) {
+      if (value is List) {
+        for (final Object? item in value) {
+          add(item);
+        }
+        return;
+      }
+      final String text = _stringify(value).trim();
+      if (text.isEmpty || text == 'null') {
+        return;
+      }
+      for (final String part in text.split(RegExp(r'[,،\n|]'))) {
+        final String clean = part.trim().replaceFirst(RegExp(r'^#+'), '');
+        if (clean.isNotEmpty && !values.contains(clean)) {
+          values.add(clean);
+        }
+      }
+    }
+
+    for (final Map<String, dynamic> map in _nestedMaps(json)) {
+      for (final String key in keys) {
+        add(map[key]);
+      }
+    }
+    return values;
+  }
+
+  static List<CompanyStarWorkItem> _parseWorks(Map<String, dynamic> json) {
+    final List<dynamic> rows = <dynamic>[
+      ..._extractNamedLists(json, <String>[
+        'works',
+        'portfolio',
+        'ads',
+        'media',
+        'gallery',
+        'items',
+      ]),
+    ];
+    final List<CompanyStarWorkItem> works = <CompanyStarWorkItem>[];
+    for (final Object? row in rows) {
+      if (row is! Map) {
+        continue;
+      }
+      final Map<String, dynamic> map = Map<String, dynamic>.from(row);
+      final String image = ApiMedia.resolve(
+        _pickFromMaps(
+          <Map<String, dynamic>>[map, ..._nestedMaps(map).skip(1)],
+          <String>[
+            'image_url',
+            'imageUrl',
+            'thumbnail_url',
+            'thumbnailUrl',
+            'cover_url',
+            'coverUrl',
+            'media_url',
+            'mediaUrl',
+            'image',
+            'thumbnail',
+            'cover',
+            'url',
+            'path',
+          ],
+        ),
+      );
+      if (image.isEmpty) {
+        continue;
+      }
+      works.add(
+        CompanyStarWorkItem(
+          id: _pickFromMaps(
+            <Map<String, dynamic>>[map],
+            <String>['id', 'uuid'],
+          ),
+          title: _pickFromMaps(
+            <Map<String, dynamic>>[map],
+            <String>['title', 'name', 'label', 'caption'],
+          ),
+          imageUrl: image,
+        ),
+      );
+    }
+    return works;
   }
 
   static List<CompanyStarAdPriceLine> _parseAdPrices(
