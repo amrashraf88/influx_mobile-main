@@ -27,7 +27,6 @@ class OnboardingFirstScreen extends StatelessWidget {
         body: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final double h = constraints.maxHeight;
-            final double w = constraints.maxWidth;
             final double panelHeight = h * 0.47;
 
             return Stack(
@@ -124,69 +123,84 @@ class _WelcomePanel extends StatelessWidget {
         panelColor: panelColor,
         arcColor: accentBlue,
       ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24.w, 42.h, 24.w, 16.h + bottomInset),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              AppStrings.of(locale, 'onboarding_title'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 30.sp,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: 6.h),
-            // Scales down to one line on narrow screens; underline only under
-            // the brand word, not the " App" suffix.
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(brand, maxLines: 1, style: brandStyle),
-                      SizedBox(height: 4.h),
-                      CustomPaint(
-                        size: Size(brandWidth, 9.h),
-                        painter: _SquigglePainter(color: accentBlue),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24.w,
+                  42.h,
+                  24.w,
+                  16.h + bottomInset,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      AppStrings.of(locale, 'onboarding_title'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontSize: 30.sp,
+                        fontWeight: FontWeight.w800,
                       ),
-                    ],
-                  ),
-                  Text(suffix, maxLines: 1, style: suffixStyle),
-                ],
-              ),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              AppStrings.of(locale, 'onboarding_first_lorem'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.lightText,
-                fontSize: 14.sp,
-                height: 1.45,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: onSkip,
-              child: Text(
-                AppStrings.of(locale, 'skip'),
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w500,
+                    ),
+                    SizedBox(height: 6.h),
+                    // Scales down to one line on narrow screens; underline only under
+                    // the brand word, not the " App" suffix.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(brand, maxLines: 1, style: brandStyle),
+                              SizedBox(height: 4.h),
+                              CustomPaint(
+                                size: Size(brandWidth, 9.h),
+                                painter: _SquigglePainter(color: accentBlue),
+                              ),
+                            ],
+                          ),
+                          Text(suffix, maxLines: 1, style: suffixStyle),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      AppStrings.of(locale, 'onboarding_first_lorem'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.lightText,
+                        fontSize: 14.sp,
+                        height: 1.45,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    SizedBox(height: 18.h),
+                    TextButton(
+                      onPressed: onSkip,
+                      child: Text(
+                        AppStrings.of(locale, 'skip'),
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

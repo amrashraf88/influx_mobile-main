@@ -1,4 +1,5 @@
 import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/core/auth/auth_token_storage.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/routes/route_names.dart';
 import 'package:adzmavall/features/company_account/data/company_account_repository.dart';
@@ -31,12 +32,16 @@ class _CompanyAccountPageState extends State<CompanyAccountPage> {
   }
 
   Future<void> _loadProfile() async {
+    if (!AuthTokenStorage.instance.isBrand) {
+      return;
+    }
     if (!ApiUrlResolver.isConfigured) {
       return;
     }
     try {
-      final CompanyAccountProfile profile =
-          await CompanyAccountRepository(DioClient.instance).fetchProfile();
+      final CompanyAccountProfile profile = await CompanyAccountRepository(
+        DioClient.instance,
+      ).fetchProfile();
       if (!mounted) {
         return;
       }
@@ -118,9 +123,7 @@ class _CompanyAccountPageState extends State<CompanyAccountPage> {
                   right: 0,
                   top: 0,
                   height: 200.h,
-                  child: CompanyAccountProfileHeader(
-                    profile: _profile,
-                  ),
+                  child: CompanyAccountProfileHeader(profile: _profile),
                 ),
               ],
             ),
