@@ -30,19 +30,12 @@ class InfluencerSocialAccountEntry extends Equatable {
       id: id,
       platform: platform ?? this.platform,
       handle: handle ?? this.handle,
-      prices: clearPrices
-          ? const <String, String>{}
-          : (prices ?? this.prices),
+      prices: clearPrices ? const <String, String>{} : (prices ?? this.prices),
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[
-    id,
-    platform,
-    handle,
-    prices,
-  ];
+  List<Object?> get props => <Object?>[id, platform, handle, prices];
 }
 
 class InfluencerProfileState extends Equatable {
@@ -206,10 +199,29 @@ class InfluencerProfileCubit extends Cubit<InfluencerProfileState> {
   InfluencerProfileCubit({
     required String phone,
     required ContentCreatorRegistrationRepository registrationRepository,
+    String? initialCreatorKind,
   }) : _registrationRepository = registrationRepository,
-       super(InfluencerProfileState(phone: phone));
+       super(
+         InfluencerProfileState(
+           phone: phone,
+           creatorKind: _normalizeCreatorKind(initialCreatorKind),
+         ),
+       );
 
   final ContentCreatorRegistrationRepository _registrationRepository;
+
+  static String _normalizeCreatorKind(String? value) {
+    final String normalized = value?.trim().toLowerCase() ?? '';
+    if (<String>{
+      'influencer',
+      'ugc',
+      'model',
+      'collage',
+    }.contains(normalized)) {
+      return normalized;
+    }
+    return 'influencer';
+  }
 
   void setGender(InfluencerGender gender) {
     emit(state.copyWith(gender: gender));
@@ -318,11 +330,7 @@ class InfluencerProfileCubit extends Cubit<InfluencerProfileState> {
     emit(state.copyWith(socialAccounts: next));
   }
 
-  void updateSocialAccountPrice(
-    String id,
-    String contentType,
-    String price,
-  ) {
+  void updateSocialAccountPrice(String id, String contentType, String price) {
     final List<InfluencerSocialAccountEntry> next = state.socialAccounts.map((
       InfluencerSocialAccountEntry e,
     ) {
@@ -330,10 +338,7 @@ class InfluencerProfileCubit extends Cubit<InfluencerProfileState> {
         return e;
       }
       return e.copyWith(
-        prices: <String, String>{
-          ...e.prices,
-          contentType: price,
-        },
+        prices: <String, String>{...e.prices, contentType: price},
       );
     }).toList();
     emit(state.copyWith(socialAccounts: next));

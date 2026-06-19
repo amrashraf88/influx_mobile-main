@@ -13,9 +13,16 @@ import 'package:go_router/go_router.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 
 class PhoneSignInPage extends StatefulWidget {
-  const PhoneSignInPage({super.key, required this.accountType});
+  const PhoneSignInPage({
+    super.key,
+    required this.accountType,
+    this.creatorType,
+    this.mode,
+  });
 
   final String accountType;
+  final String? creatorType;
+  final String? mode;
 
   @override
   State<PhoneSignInPage> createState() => _PhoneSignInPageState();
@@ -323,44 +330,59 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
                                         (
                                           AuthPhoneState previous,
                                           AuthPhoneState current,
-                                        ) =>
-                                            previous.status != current.status,
-                                    listener: (
-                                      BuildContext context,
-                                      AuthPhoneState state,
-                                    ) {
-                                      if (state.status != AuthPhoneStatus.success) {
-                                        return;
-                                      }
-                                      final OtpInitiateResult? result =
-                                          state.lastInitiateResult;
-                                      if (result == null || result.id.isEmpty) {
-                                        return;
-                                      }
-                                      final String phone = '$_dialCode${state.digits}';
-                                      final String identifier =
-                                          AuthPhoneCubit.apiIdentifier(
-                                            _dialCode,
-                                            state.digits,
-                                          );
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-                                      context.push(
-                                        Uri(
-                                          path: RouteNames.authVerification,
-                                          queryParameters: <String, String>{
-                                            'account': widget.accountType,
-                                            'phone': phone,
-                                            'identifier': identifier,
-                                            'otpId': result.id,
-                                            'hasExistingAccount':
-                                                result.hasExistingAccount
+                                        ) => previous.status != current.status,
+                                    listener:
+                                        (
+                                          BuildContext context,
+                                          AuthPhoneState state,
+                                        ) {
+                                          if (state.status !=
+                                              AuthPhoneStatus.success) {
+                                            return;
+                                          }
+                                          final OtpInitiateResult? result =
+                                              state.lastInitiateResult;
+                                          if (result == null ||
+                                              result.id.isEmpty) {
+                                            return;
+                                          }
+                                          final String phone =
+                                              '$_dialCode${state.digits}';
+                                          final String identifier =
+                                              AuthPhoneCubit.apiIdentifier(
+                                                _dialCode,
+                                                state.digits,
+                                              );
+                                          if (!context.mounted) {
+                                            return;
+                                          }
+                                          context.push(
+                                            Uri(
+                                              path: RouteNames.authVerification,
+                                              queryParameters: <String, String>{
+                                                'account': widget.accountType,
+                                                'phone': phone,
+                                                'identifier': identifier,
+                                                'otpId': result.id,
+                                                'hasExistingAccount': result
+                                                    .hasExistingAccount
                                                     .toString(),
-                                          },
-                                        ).toString(),
-                                      );
-                                    },
+                                                if (widget.creatorType !=
+                                                        null &&
+                                                    widget.creatorType!
+                                                        .trim()
+                                                        .isNotEmpty)
+                                                  'creatorType':
+                                                      widget.creatorType!,
+                                                if (widget.mode != null &&
+                                                    widget.mode!
+                                                        .trim()
+                                                        .isNotEmpty)
+                                                  'mode': widget.mode!,
+                                              },
+                                            ).toString(),
+                                          );
+                                        },
                                     builder: (context, state) {
                                       final bool canSubmit =
                                           state.isValid && !state.isLoading;
@@ -368,7 +390,8 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.stretch,
                                         children: <Widget>[
-                                          if (state.errorMessage != null) ...<Widget>[
+                                          if (state.errorMessage !=
+                                              null) ...<Widget>[
                                             Text(
                                               state.errorMessage!,
                                               style: TextStyle(
@@ -404,7 +427,9 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
                                               onPressed: canSubmit
                                                   ? () {
                                                       context
-                                                          .read<AuthPhoneCubit>()
+                                                          .read<
+                                                            AuthPhoneCubit
+                                                          >()
                                                           .initiateOtp(
                                                             accountType: widget
                                                                 .accountType,
@@ -432,6 +457,30 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
                                             ),
                                           ),
                                           SizedBox(height: 18.h),
+                                          if (widget.accountType !=
+                                              'company') ...<Widget>[
+                                            TextButton(
+                                              onPressed: state.isLoading
+                                                  ? null
+                                                  : () {
+                                                      context.push(
+                                                        RouteNames
+                                                            .authCreatorType,
+                                                      );
+                                                    },
+                                              child: Text(
+                                                isArabic
+                                                    ? 'تسجيل جديد كصانع محتوى'
+                                                    : 'New creator registration',
+                                                style: TextStyle(
+                                                  color: AppColors.brandBlue,
+                                                  fontSize: 14.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: 8.h),
+                                          ],
                                           Text(
                                             'By Clicking Continue, you agree to\nAdz Mavall Agreement',
                                             textAlign: TextAlign.center,

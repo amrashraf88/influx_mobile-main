@@ -15,10 +15,14 @@ class OtpVerificationPage extends StatelessWidget {
     super.key,
     required this.displayPhone,
     required this.accountType,
+    this.creatorType,
+    this.mode,
   });
 
   final String displayPhone;
   final String accountType;
+  final String? creatorType;
+  final String? mode;
 
   @override
   Widget build(BuildContext context) {
@@ -79,25 +83,28 @@ class OtpVerificationPage extends StatelessWidget {
                             OtpVerificationState previous,
                             OtpVerificationState current,
                           ) => previous.status != current.status,
-                      listener: (
-                        BuildContext context,
-                        OtpVerificationState state,
-                      ) async {
-                        if (state.status != OtpVerificationStatus.success) {
-                          return;
-                        }
-                        final cubit = context.read<OtpVerificationCubit>();
-                        if (!context.mounted) {
-                          return;
-                        }
-                        context.go(
-                          AuthPostOtpNavigator.routeAfterOtp(
-                            accountType: accountType,
-                            displayPhone: displayPhone,
-                            hasExistingAccount: cubit.hasExistingAccount,
-                          ),
-                        );
-                      },
+                      listener:
+                          (
+                            BuildContext context,
+                            OtpVerificationState state,
+                          ) async {
+                            if (state.status != OtpVerificationStatus.success) {
+                              return;
+                            }
+                            final cubit = context.read<OtpVerificationCubit>();
+                            if (!context.mounted) {
+                              return;
+                            }
+                            context.go(
+                              AuthPostOtpNavigator.routeAfterOtp(
+                                accountType: accountType,
+                                displayPhone: displayPhone,
+                                hasExistingAccount: cubit.hasExistingAccount,
+                                creatorType: creatorType,
+                                mode: mode,
+                              ),
+                            );
+                          },
                       builder: (context, state) {
                         final cubit = context.read<OtpVerificationCubit>();
                         final bool canSubmit =
@@ -164,10 +171,11 @@ class OtpVerificationPage extends StatelessWidget {
                                         ? SizedBox(
                                             width: 22.w,
                                             height: 22.w,
-                                            child: const CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppColors.white,
-                                            ),
+                                            child:
+                                                const CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: AppColors.white,
+                                                ),
                                           )
                                         : Text(
                                             AppStrings.of(locale, 'auth_next'),

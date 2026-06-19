@@ -6,6 +6,7 @@ import 'package:adzmavall/features/auth/presentation/cubit/account_type_cubit.da
 import 'package:adzmavall/features/auth/presentation/cubit/auth_phone_cubit.dart';
 import 'package:adzmavall/features/auth/presentation/cubit/otp_verification_cubit.dart';
 import 'package:adzmavall/features/auth/presentation/pages/choose_account_type_page.dart';
+import 'package:adzmavall/features/auth/presentation/pages/creator_type_selection_page.dart';
 import 'package:adzmavall/features/auth/presentation/pages/otp_verification_page.dart';
 import 'package:adzmavall/features/auth/presentation/pages/phone_sign_in_page.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/pages/company_campaign_details_page.dart';
@@ -56,13 +57,23 @@ abstract final class AppRouter {
         ),
       ),
       GoRoute(
+        path: RouteNames.authCreatorType,
+        builder: (context, state) => const CreatorTypeSelectionPage(),
+      ),
+      GoRoute(
         path: RouteNames.authPhone,
         builder: (context, state) {
           final String account =
               state.uri.queryParameters['account'] ?? 'influencer';
+          final String? creatorType = state.uri.queryParameters['creatorType'];
+          final String? mode = state.uri.queryParameters['mode'];
           return BlocProvider<AuthPhoneCubit>(
             create: (_) => AuthPhoneCubit(AuthRepository(DioClient.instance)),
-            child: PhoneSignInPage(accountType: account),
+            child: PhoneSignInPage(
+              accountType: account,
+              creatorType: creatorType,
+              mode: mode,
+            ),
           );
         },
       ),
@@ -76,6 +87,8 @@ abstract final class AppRouter {
           final String identifier =
               state.uri.queryParameters['identifier'] ?? '';
           final String otpId = state.uri.queryParameters['otpId'] ?? '';
+          final String? creatorType = state.uri.queryParameters['creatorType'];
+          final String? mode = state.uri.queryParameters['mode'];
           final bool hasExistingAccount =
               state.uri.queryParameters['hasExistingAccount'] == 'true';
           return BlocProvider<OtpVerificationCubit>(
@@ -90,6 +103,8 @@ abstract final class AppRouter {
             child: OtpVerificationPage(
               displayPhone: phone,
               accountType: account,
+              creatorType: creatorType,
+              mode: mode,
             ),
           );
         },
@@ -99,7 +114,11 @@ abstract final class AppRouter {
         builder: (context, state) {
           final String phone =
               state.uri.queryParameters['phone'] ?? '+966555555555';
-          return InfluencerCompleteProfilePage(phone: phone);
+          final String? creatorType = state.uri.queryParameters['creatorType'];
+          return InfluencerCompleteProfilePage(
+            phone: phone,
+            creatorType: creatorType,
+          );
         },
       ),
       GoRoute(

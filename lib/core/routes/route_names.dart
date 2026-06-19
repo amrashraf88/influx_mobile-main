@@ -27,6 +27,7 @@ abstract final class RouteNames {
   static const String influencerChatDetails = '/influencer/chats/:threadId';
   static const String influencerSettings = '/influencer/settings';
   static const String authAccountType = '/auth/account-type';
+  static const String authCreatorType = '/auth/creator-type';
   static const String authPhone = '/auth/phone';
   static const String authVerification = '/auth/verification';
   static const String profileInfluencerComplete =
@@ -77,5 +78,37 @@ abstract final class RouteNames {
       return companyHome;
     }
     return Uri(path: companyHome, queryParameters: qp).toString();
+  }
+
+  static String authPhonePath({
+    required String account,
+    String? creatorType,
+    String? mode,
+  }) {
+    return Uri(
+      path: authPhone,
+      queryParameters: <String, String>{
+        'account': account,
+        if (creatorType != null && creatorType.trim().isNotEmpty)
+          'creatorType': creatorType,
+        if (mode != null && mode.trim().isNotEmpty) 'mode': mode,
+      },
+    ).toString();
+  }
+
+  static String profileInfluencerCompletePath({
+    required String phone,
+    String account = 'influencer',
+    String? creatorType,
+  }) {
+    return Uri(
+      path: profileInfluencerComplete,
+      queryParameters: <String, String>{
+        'phone': phone,
+        'account': account,
+        if (creatorType != null && creatorType.trim().isNotEmpty)
+          'creatorType': creatorType,
+      },
+    ).toString();
   }
 }

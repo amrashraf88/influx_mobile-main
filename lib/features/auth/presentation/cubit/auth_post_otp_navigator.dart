@@ -6,6 +6,8 @@ abstract final class AuthPostOtpNavigator {
     required String accountType,
     required String displayPhone,
     required bool hasExistingAccount,
+    String? creatorType,
+    String? mode,
   }) {
     if (hasExistingAccount) {
       if (accountType == 'company') {
@@ -27,12 +29,15 @@ abstract final class AuthPostOtpNavigator {
       ).toString();
     }
 
-    return Uri(
-      path: RouteNames.profileInfluencerComplete,
-      queryParameters: <String, String>{
-        'phone': displayPhone,
-        'account': accountType,
-      },
-    ).toString();
+    if (mode == 'register' &&
+        (creatorType == null || creatorType.trim().isEmpty)) {
+      return RouteNames.authCreatorType;
+    }
+
+    return RouteNames.profileInfluencerCompletePath(
+      phone: displayPhone,
+      account: accountType,
+      creatorType: creatorType,
+    );
   }
 }

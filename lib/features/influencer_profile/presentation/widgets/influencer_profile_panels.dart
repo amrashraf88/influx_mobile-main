@@ -6,9 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class InfluencerProfileTabContent extends StatelessWidget {
-  const InfluencerProfileTabContent({super.key, required this.index});
+  const InfluencerProfileTabContent({
+    super.key,
+    required this.index,
+    this.rawProfile = const <String, dynamic>{},
+    this.creatorType = 'influencer',
+  });
 
   final int index;
+  final Map<String, dynamic> rawProfile;
+  final String creatorType;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +29,7 @@ class InfluencerProfileTabContent extends StatelessWidget {
       case 4:
         return const _OverviewPanel();
       case 5:
-        return const _DetailsEmptyPanel();
+        return _DetailsPanel(rawProfile: rawProfile, creatorType: creatorType);
       case 0:
       default:
         return const _AccountsPanel();
@@ -30,13 +37,186 @@ class InfluencerProfileTabContent extends StatelessWidget {
   }
 }
 
-class _DetailsEmptyPanel extends StatelessWidget {
-  const _DetailsEmptyPanel();
+class _DetailsPanel extends StatelessWidget {
+  const _DetailsPanel({required this.rawProfile, required this.creatorType});
+
+  final Map<String, dynamic> rawProfile;
+  final String creatorType;
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.shrink();
+    final List<_ProfileDetailRow> rows = _detailsForType(
+      rawProfile,
+      creatorType,
+    );
+    if (rows.isEmpty) {
+      return InfluencerPanelCard(
+        child: Text(
+          'No profile details yet.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    return InfluencerPanelCard(
+      child: Column(
+        children: <Widget>[
+          for (int i = 0; i < rows.length; i++) ...<Widget>[
+            _ProfileDetailTile(row: rows[i]),
+            if (i != rows.length - 1)
+              Divider(height: 18.h, color: const Color(0xFFEDEFF4)),
+          ],
+        ],
+      ),
+    );
   }
+}
+
+class _ProfileDetailTile extends StatelessWidget {
+  const _ProfileDetailTile({required this.row});
+
+  final _ProfileDetailRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            row.label,
+            style: TextStyle(
+              color: const Color(0xFF7A8392),
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Expanded(
+          flex: 2,
+          child: Text(
+            row.value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileDetailRow {
+  const _ProfileDetailRow(this.label, this.value);
+
+  final String label;
+  final String value;
+}
+
+List<_ProfileDetailRow> _detailsForType(
+  Map<String, dynamic> json,
+  String creatorType,
+) {
+  final List<_ProfileDetailRow> common = <_ProfileDetailRow>[
+    _row(json, 'Creator type', <String>['creator_type', 'creatorType', 'type']),
+    _row(json, 'City', <String>['city']),
+    _row(json, 'Gender', <String>['gender']),
+    _row(json, 'Age', <String>['age']),
+  ];
+
+  final String normalized = creatorType.trim().toLowerCase();
+  final List<_ProfileDetailRow> typed = switch (normalized) {
+    'model' => <_ProfileDetailRow>[
+      _row(json, 'Nationality', <String>['nationality']),
+      _row(json, 'Height', <String>['height', 'height_cm']),
+      _row(json, 'Weight', <String>['weight', 'weight_kg']),
+      _row(json, 'Size', <String>['size']),
+      _row(json, 'Skin tone', <String>['skin_tone', 'skinTone']),
+      _row(json, 'Session price', <String>[
+        'session_price_per_hour',
+        'sessionRatePerHour',
+      ]),
+      _row(json, 'Face visible', <String>['face_visibility', 'faceVisible']),
+      _row(json, 'Hair visible', <String>['show_hair', 'showHair']),
+      _row(json, 'Full body', <String>['body_visibility', 'bodyVisibility']),
+    ],
+    'ugc' => <_ProfileDetailRow>[
+      _row(json, 'Video price', <String>['video_price', 'videoPrice']),
+      _row(json, 'Delivery time', <String>[
+        'deliverability_time',
+        'delivery_time_from_arrival',
+        'deliveryTimeFromArrival',
+      ]),
+      _row(json, 'Voice over', <String>['voice_over', 'voiceOver']),
+      _row(json, 'Hook', <String>['use_hook', 'useHook']),
+      _row(json, 'Face visible', <String>['face_visibility', 'faceVisible']),
+      _row(json, 'Hair visible', <String>['show_hair', 'showHair']),
+    ],
+    'collage' => <_ProfileDetailRow>[
+      _row(json, 'District', <String>['street', 'collage_district']),
+      _row(json, 'Direction', <String>['city_direction', 'cityDirection']),
+      _row(json, 'Accent', <String>['accent']),
+      _row(json, 'Clip price', <String>[
+        'clip_price_per_second',
+        'clipPricePerSecond',
+      ]),
+    ],
+    _ => <_ProfileDetailRow>[
+      _row(json, 'District', <String>['street', 'district']),
+      _row(json, 'Direction', <String>['city_direction', 'cityDirection']),
+      _row(json, 'Mawthooq license', <String>[
+        'mawthooq_license_number',
+        'mawthooqLicenseNumber',
+        'license_number',
+      ]),
+    ],
+  };
+
+  return <_ProfileDetailRow>[
+    ...common,
+    ...typed,
+  ].where((_ProfileDetailRow row) => row.value.trim().isNotEmpty).toList();
+}
+
+_ProfileDetailRow _row(
+  Map<String, dynamic> json,
+  String label,
+  List<String> keys,
+) {
+  return _ProfileDetailRow(label, _pickProfileValue(json, keys));
+}
+
+String _pickProfileValue(Map<String, dynamic> json, List<String> keys) {
+  final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+  for (final String objectKey in <String>[
+    'user',
+    'profile',
+    'content_creator',
+    'contentCreator',
+    'creator',
+  ]) {
+    final Object? value = json[objectKey];
+    if (value is Map) {
+      maps.add(Map<String, dynamic>.from(value));
+    }
+  }
+  for (final Map<String, dynamic> map in maps) {
+    for (final String key in keys) {
+      final Object? value = map[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+  }
+  return '';
 }
 
 class _AccountsPanel extends StatelessWidget {

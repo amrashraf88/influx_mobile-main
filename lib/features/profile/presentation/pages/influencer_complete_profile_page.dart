@@ -17,9 +17,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class InfluencerCompleteProfilePage extends StatefulWidget {
-  const InfluencerCompleteProfilePage({super.key, required this.phone});
+  const InfluencerCompleteProfilePage({
+    super.key,
+    required this.phone,
+    this.creatorType,
+  });
 
   final String phone;
+  final String? creatorType;
 
   @override
   State<InfluencerCompleteProfilePage> createState() =>
@@ -75,15 +80,15 @@ class _InfluencerCompleteProfilePageState
           BlocProvider<InfluencerProfileCubit>(
             create: (_) => InfluencerProfileCubit(
               phone: widget.phone,
+              initialCreatorKind: widget.creatorType,
               registrationRepository: ContentCreatorRegistrationRepository(
                 DioClient.instance,
               ),
             ),
           ),
           BlocProvider<ProfileLookupsCubit>(
-            create: (_) => ProfileLookupsCubit(
-              LookupRepository(DioClient.instance),
-            ),
+            create: (_) =>
+                ProfileLookupsCubit(LookupRepository(DioClient.instance)),
           ),
         ],
         child: Scaffold(
@@ -245,11 +250,15 @@ class _InfluencerCompleteProfilePageState
                               onPressed: canSubmit
                                   ? () async {
                                       final InfluencerProfileCubit cubit =
-                                          context.read<InfluencerProfileCubit>();
+                                          context
+                                              .read<InfluencerProfileCubit>();
                                       _syncTextFieldsToCubit(cubit);
-                                      final bool success = await cubit.register();
+                                      final bool success = await cubit
+                                          .register();
                                       if (success && context.mounted) {
-                                        context.go(RouteNames.influencerHome);
+                                        context.go(
+                                          RouteNames.influencerProfile,
+                                        );
                                       }
                                     }
                                   : null,
@@ -463,21 +472,25 @@ class _BasicInformationSection extends StatelessWidget {
             ),
             SizedBox(height: 12.h),
             BlocBuilder<ProfileLookupsCubit, ProfileLookupsState>(
-              builder: (BuildContext context, ProfileLookupsState lookupsState) {
-                return _ProfileLookupSelectField(
-                  label: AppStrings.of(locale, 'profile_city'),
-                  hint: AppStrings.of(locale, 'profile_city_hint'),
-                  status: lookupsState.citiesStatus,
-                  errorMessage: lookupsState.citiesError,
-                  items: lookupsState.cities,
-                  value: _lookupValueInOptions(state.city, lookupsState.cities),
-                  fieldErrorText: showErrors && state.city.trim().isEmpty
-                      ? AppStrings.of(locale, 'profile_required_error')
-                      : null,
-                  onChanged: cubit.setCity,
-                  onRetry: context.read<ProfileLookupsCubit>().loadCities,
-                );
-              },
+              builder:
+                  (BuildContext context, ProfileLookupsState lookupsState) {
+                    return _ProfileLookupSelectField(
+                      label: AppStrings.of(locale, 'profile_city'),
+                      hint: AppStrings.of(locale, 'profile_city_hint'),
+                      status: lookupsState.citiesStatus,
+                      errorMessage: lookupsState.citiesError,
+                      items: lookupsState.cities,
+                      value: _lookupValueInOptions(
+                        state.city,
+                        lookupsState.cities,
+                      ),
+                      fieldErrorText: showErrors && state.city.trim().isEmpty
+                          ? AppStrings.of(locale, 'profile_required_error')
+                          : null,
+                      onChanged: cubit.setCity,
+                      onRetry: context.read<ProfileLookupsCubit>().loadCities,
+                    );
+                  },
             ),
             if (state.creatorKind == 'influencer') ...<Widget>[
               SizedBox(height: 12.h),
@@ -518,12 +531,11 @@ class _CategoriesSection extends StatelessWidget {
               body = Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.h),
                 child: const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.brandBlue,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.brandBlue),
                 ),
               );
-            } else if (lookupsState.categoriesStatus == LookupLoadStatus.failure) {
+            } else if (lookupsState.categoriesStatus ==
+                LookupLoadStatus.failure) {
               body = Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -688,7 +700,8 @@ class _InfluencerDetailsSection extends StatelessWidget {
                   label: AppStrings.of(locale, 'profile_district'),
                   hint: AppStrings.of(locale, 'profile_district_hint'),
                   controller: districtController,
-                  errorText: showErrors && districtController.text.trim().isEmpty
+                  errorText:
+                      showErrors && districtController.text.trim().isEmpty
                       ? AppStrings.of(locale, 'profile_required_error')
                       : null,
                   onChanged: cubit.setDistrict,
@@ -780,7 +793,8 @@ class _ModelDetailsSection extends StatelessWidget {
                 state.creatorFields['size'],
                 lookupsState.modelSizes,
               ),
-              fieldErrorText: state.isSubmitted &&
+              fieldErrorText:
+                  state.isSubmitted &&
                       (state.creatorFields['size']?.trim().isEmpty ?? true)
                   ? AppStrings.of(locale, 'profile_required_error')
                   : null,
@@ -802,9 +816,9 @@ class _ModelDetailsSection extends StatelessWidget {
                 state.creatorFields['skin_tone'],
                 lookupsState.modelSkinTones,
               ),
-              fieldErrorText: state.isSubmitted &&
-                      (state.creatorFields['skin_tone']?.trim().isEmpty ??
-                          true)
+              fieldErrorText:
+                  state.isSubmitted &&
+                      (state.creatorFields['skin_tone']?.trim().isEmpty ?? true)
                   ? AppStrings.of(locale, 'profile_required_error')
                   : null,
               onChanged: (String value) =>
@@ -917,7 +931,8 @@ class _CollageDetailsSection extends StatelessWidget {
                 state.creatorFields['accent'],
                 lookupsState.modelAccents,
               ),
-              fieldErrorText: state.isSubmitted &&
+              fieldErrorText:
+                  state.isSubmitted &&
                       (state.creatorFields['accent']?.trim().isEmpty ?? true)
                   ? AppStrings.of(locale, 'profile_required_error')
                   : null,
@@ -1189,7 +1204,8 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
     if (platform.isEmpty || !mounted) {
       return;
     }
-    final ProfileLookupsCubit lookupsCubit = context.read<ProfileLookupsCubit>();
+    final ProfileLookupsCubit lookupsCubit = context
+        .read<ProfileLookupsCubit>();
     final List<LookupItem> cached = lookupsCubit.state.adContentTypesFor(
       platform,
     );
@@ -1207,7 +1223,9 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
   }
 
   void _ensurePriceControllers(List<LookupItem> contentTypes) {
-    final Set<String> needed = contentTypes.map((LookupItem e) => e.value).toSet();
+    final Set<String> needed = contentTypes
+        .map((LookupItem e) => e.value)
+        .toSet();
     for (final String key in _priceControllers.keys.toList()) {
       if (!needed.contains(key)) {
         _priceControllers.remove(key)?.dispose();
@@ -1216,9 +1234,8 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
     for (final LookupItem item in contentTypes) {
       _priceControllers.putIfAbsent(
         item.value,
-        () => TextEditingController(
-          text: widget.entry.prices[item.value] ?? '',
-        ),
+        () =>
+            TextEditingController(text: widget.entry.prices[item.value] ?? ''),
       );
     }
   }
@@ -1245,7 +1262,8 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
     final LookupLoadStatus status = lookupsState.adContentTypesStatusFor(
       platform,
     );
-    final ProfileLookupsCubit lookupsCubit = context.read<ProfileLookupsCubit>();
+    final ProfileLookupsCubit lookupsCubit = context
+        .read<ProfileLookupsCubit>();
 
     if (status == LookupLoadStatus.loading ||
         status == LookupLoadStatus.initial) {
@@ -1361,11 +1379,11 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
                     clearPrices: true,
                   );
                   _disposePriceControllers();
-                  context
-                      .read<ProfileLookupsCubit>()
-                      .loadAdContentTypes(value);
+                  context.read<ProfileLookupsCubit>().loadAdContentTypes(value);
                 },
-                onRetry: context.read<ProfileLookupsCubit>().loadSocialPlatforms,
+                onRetry: context
+                    .read<ProfileLookupsCubit>()
+                    .loadSocialPlatforms,
               );
             },
           ),
@@ -1382,7 +1400,9 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
           SizedBox(height: 12.h),
           BlocListener<ProfileLookupsCubit, ProfileLookupsState>(
             listenWhen: (ProfileLookupsState p, ProfileLookupsState c) {
-              final String platform = widget.entry.platform.trim().toLowerCase();
+              final String platform = widget.entry.platform
+                  .trim()
+                  .toLowerCase();
               if (platform.isEmpty) {
                 return false;
               }
@@ -1397,8 +1417,8 @@ class _SocialAccountEditorState extends State<_SocialAccountEditor> {
             child: BlocBuilder<ProfileLookupsCubit, ProfileLookupsState>(
               builder:
                   (BuildContext context, ProfileLookupsState lookupsState) {
-                return _buildContentTypePrices(lookupsState, locale);
-              },
+                    return _buildContentTypePrices(lookupsState, locale);
+                  },
             ),
           ),
         ],
