@@ -1,5 +1,4 @@
 import 'package:adzmavall/core/routes/route_names.dart';
-import 'package:adzmavall/features/auth/presentation/widgets/auth_flow_header_widget.dart';
 import 'package:adzmavall/features/auth/presentation/widgets/auth_header_grid_painter.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -63,62 +62,91 @@ class CreatorTypeSelectionPage extends StatelessWidget {
           body: SafeArea(
             top: false,
             bottom: false,
-            child: Stack(
+            child: Column(
               children: <Widget>[
                 SizedBox(
-                  height: 300.h,
+                  height: 330.h,
                   width: double.infinity,
-                  child: CustomPaint(
-                    foregroundPainter: AuthHeaderGridPainter(),
-                    child: Container(
-                      color: AppColors.brandBlue,
-                      padding: EdgeInsets.only(top: 72.h),
-                      child: AuthFlowHeaderWidget(
-                        showStar: false,
-                        centerText: true,
-                        title: isArabic
-                            ? 'اختر نوع\nصانع المحتوى'
-                            : 'Choose creator\ntype',
-                        subtitle: isArabic
-                            ? 'هنجهز فورم التسجيل حسب اختيارك.'
-                            : 'The registration form adapts to your type.',
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(
+                        child: CustomPaint(
+                          foregroundPainter: AuthHeaderGridPainter(),
+                          child: Container(color: AppColors.brandBlue),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        top: 58.h,
+                        left: 16.w,
+                        child: _BackButton(
+                          onPressed: () => context.pop(),
+                          isArabic: isArabic,
+                        ),
+                      ),
+                      Positioned(
+                        left: 58.w,
+                        right: 28.w,
+                        top: 92.h,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              isArabic
+                                  ? 'اختر نوع صانع المحتوى'
+                                  : 'Choose creator type',
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 30.sp,
+                                fontWeight: FontWeight.w800,
+                                height: 1.15,
+                              ),
+                            ),
+                            SizedBox(height: 18.h),
+                            Text(
+                              isArabic
+                                  ? 'هنجهز فورم التسجيل حسب اختيارك.'
+                                  : 'The registration form adapts to your type.',
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.white.withValues(alpha: 0.9),
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w500,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Positioned(
-                  top: 60.h,
-                  left: 16.w,
-                  child: _BackButton(
-                    onPressed: () => context.pop(),
-                    isArabic: isArabic,
-                  ),
-                ),
-                Positioned.fill(
-                  top: 252.h,
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 28.h),
-                    child: Column(
-                      children: <Widget>[
-                        for (final _CreatorTypeOption option
-                            in _options) ...<Widget>[
-                          _CreatorTypeCard(
-                            option: option,
-                            isArabic: isArabic,
-                            onTap: () {
-                              context.push(
-                                RouteNames.authPhonePath(
-                                  account: 'influencer',
-                                  creatorType: option.value,
-                                  mode: 'register',
-                                ),
-                              );
-                            },
-                          ),
-                          SizedBox(height: 12.h),
-                        ],
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 28.h),
+                    children: <Widget>[
+                      for (final _CreatorTypeOption option
+                          in _options) ...<Widget>[
+                        _CreatorTypeCard(
+                          option: option,
+                          isArabic: isArabic,
+                          onTap: () {
+                            context.push(
+                              RouteNames.authPhonePath(
+                                account: 'influencer',
+                                creatorType: option.value,
+                                mode: 'register',
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: 12.h),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ],
