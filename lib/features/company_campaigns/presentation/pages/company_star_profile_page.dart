@@ -5,6 +5,7 @@ import 'package:adzmavall/core/routes/route_names.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_stars_repository.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_stars_view_data.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_star_models.dart';
+import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/models/influencer_profile_view_data.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_profile_summary_card.dart';
@@ -259,22 +260,16 @@ class _AdPriceCard extends StatelessWidget {
   final CompanyStarAdPriceLine line;
   final Locale locale;
 
-  String? get _platformAsset {
-    switch (line.labelKey) {
-      case 'company_star_platform_snapchat':
-        return ImageAssets.snapchatIcon;
-      case 'company_star_platform_tiktok':
-        return ImageAssets.homeInfluencerTiktok;
-      case 'company_star_platform_whatsapp':
-        return ImageAssets.whatsappIcon;
-      default:
-        return null;
-    }
+  String get _platformAsset {
+    final String platform = line.platformName.trim().isNotEmpty
+        ? line.platformName
+        : line.labelKey;
+    return CompanyCampaignPlatformAssets.assetFor(platform);
   }
 
   @override
   Widget build(BuildContext context) {
-    final String? asset = _platformAsset;
+    final String asset = _platformAsset;
     final String platformName = line.platformName.trim().isNotEmpty
         ? line.platformName.trim()
         : AppStrings.of(locale, line.labelKey);
@@ -285,10 +280,8 @@ class _AdPriceCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              if (asset != null) ...<Widget>[
-                Image.asset(asset, width: 25.w, height: 25.h),
-                SizedBox(width: 6.w),
-              ],
+              Image.asset(asset, width: 25.w, height: 25.h),
+              SizedBox(width: 6.w),
               Expanded(
                 child: Text(
                   platformName,

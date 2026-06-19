@@ -1,4 +1,5 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
 import 'package:adzmavall/features/company_home/presentation/models/company_home_models.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -84,11 +85,11 @@ class CompanyHomeCampaignCardWidget extends StatelessWidget {
             const Spacer(),
             Row(
               children: <Widget>[
-                const _PlatformDot(color: AppColors.instagram, label: 'IG'),
+                const _PlatformDot(platform: 'instagram'),
                 SizedBox(width: 7.w),
-                const _PlatformDot(color: AppColors.tiktok, label: 'TT'),
+                const _PlatformDot(platform: 'tiktok'),
                 SizedBox(width: 7.w),
-                const _PlatformDot(color: AppColors.youtube, label: 'YT'),
+                const _PlatformDot(platform: 'youtube'),
                 const Spacer(),
                 Text(
                   amount,
@@ -190,10 +191,9 @@ class _AvatarStack extends StatelessWidget {
 }
 
 class _PlatformDot extends StatelessWidget {
-  const _PlatformDot({required this.color, required this.label});
+  const _PlatformDot({required this.platform});
 
-  final Color color;
-  final String label;
+  final String platform;
 
   @override
   Widget build(BuildContext context) {
@@ -201,14 +201,15 @@ class _PlatformDot extends StatelessWidget {
       width: 24.w,
       height: 24.w,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: AppColors.white,
-          fontSize: 7.5.sp,
-          fontWeight: FontWeight.w900,
-        ),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF1F5F9),
+        shape: BoxShape.circle,
+      ),
+      child: Image.asset(
+        CompanyCampaignPlatformAssets.assetFor(platform),
+        width: 15.w,
+        height: 15.w,
+        fit: BoxFit.contain,
       ),
     );
   }

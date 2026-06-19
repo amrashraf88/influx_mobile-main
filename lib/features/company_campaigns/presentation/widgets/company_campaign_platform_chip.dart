@@ -7,28 +7,35 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 abstract final class CompanyCampaignPlatformAssets {
   static String assetFor(String platform) {
-    switch (platform.trim().toLowerCase()) {
-      case 'instagram':
-        return ImageAssets.instagramColoredIcon;
-      case 'tik tok':
-      case 'tiktok':
-        return ImageAssets.homeInfluencerTiktok;
-      case 'youtube':
-        return ImageAssets.homeInfluencerYoutube;
-      case 'telegram':
-        return ImageAssets.telegramColoredIcon;
-      case 'whatsapp':
-        return ImageAssets.whatsappColoredIcon;
-      case 'threads':
-        return ImageAssets.threadsIcon;
-      case 'snapchat':
-      case 'snap':
-        return ImageAssets.snapchatIcon;
-      case 'facebook':
-        return ImageAssets.homeInfluencerFacebook;
-      default:
-        return ImageAssets.platformsIcon;
+    final String value = platform.trim().toLowerCase();
+    if (value.contains('instagram') || value == 'ig') {
+      return ImageAssets.instagramColoredIcon;
     }
+    if (value.contains('tik') || value.contains('tok')) {
+      return ImageAssets.homeInfluencerTiktok;
+    }
+    if (value.contains('youtube') || value == 'yt') {
+      return ImageAssets.homeInfluencerYoutube;
+    }
+    if (value.contains('telegram')) {
+      return ImageAssets.telegramColoredIcon;
+    }
+    if (value.contains('whatsapp') || value == 'wa') {
+      return ImageAssets.whatsappColoredIcon;
+    }
+    if (value.contains('thread')) {
+      return ImageAssets.threadsIcon;
+    }
+    if (value.contains('snap')) {
+      return ImageAssets.snapchatIcon;
+    }
+    if (value.contains('facebook') || value == 'fb') {
+      return ImageAssets.homeInfluencerFacebook;
+    }
+    if (value == 'x' || value.contains('twitter') || value.contains('x.com')) {
+      return ImageAssets.twitterIcon;
+    }
+    return ImageAssets.platformsIcon;
   }
 }
 
@@ -80,8 +87,9 @@ class CompanyCampaignPlatformChip extends StatelessWidget {
                   maxLines: 1,
                   minFontSize: 8,
                   style: TextStyle(
-                    color:
-                        selected ? AppColors.brandBlue : AppColors.textPrimary,
+                    color: selected
+                        ? AppColors.brandBlue
+                        : AppColors.textPrimary,
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -174,7 +182,9 @@ class CompanyCampaignPlatformPicker extends StatelessWidget {
       children: List<Widget>.generate(rows.length, (int rowIndex) {
         final List<Widget> rowCells = rows[rowIndex];
         return Padding(
-          padding: EdgeInsets.only(bottom: rowIndex == rows.length - 1 ? 0 : 8.h),
+          padding: EdgeInsets.only(
+            bottom: rowIndex == rows.length - 1 ? 0 : 8.h,
+          ),
           child: Row(
             children: List<Widget>.generate(_columns, (int colIndex) {
               return Expanded(

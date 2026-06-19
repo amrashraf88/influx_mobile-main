@@ -8,6 +8,7 @@ import 'package:adzmavall/features/company_campaigns/presentation/widgets/compan
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_flow_dialogs.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_date_field.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_form_field.dart';
+import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_panel_card.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:adzmavall/utils/imageassets.dart';
@@ -113,6 +114,12 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
       'company_star_platform_snapchat' => 'Snapchat',
       'company_star_platform_tiktok' => 'Tik Tok',
       'company_star_platform_whatsapp' => 'Whatsapp',
+      'company_star_platform_instagram' => 'Instagram',
+      'company_star_platform_facebook' => 'Facebook',
+      'company_star_platform_youtube' => 'YouTube',
+      'company_star_platform_telegram' => 'Telegram',
+      'company_star_platform_threads' => 'Threads',
+      'company_star_platform_twitter' => 'X',
       _ => key,
     };
   }
@@ -127,6 +134,24 @@ class _CompanyRequestAdPageState extends State<CompanyRequestAdPage> {
     }
     if (lower.contains('whats')) {
       return 'wa';
+    }
+    if (lower.contains('insta')) {
+      return 'instagram';
+    }
+    if (lower.contains('face') || lower == 'fb') {
+      return 'facebook';
+    }
+    if (lower.contains('you') || lower == 'yt') {
+      return 'youtube';
+    }
+    if (lower.contains('telegram')) {
+      return 'telegram';
+    }
+    if (lower.contains('thread')) {
+      return 'threads';
+    }
+    if (lower == 'x' || lower.contains('twitter')) {
+      return 'twitter';
     }
     return lower.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
   }
@@ -334,32 +359,23 @@ class _PlatformCard extends StatelessWidget {
   final Locale locale;
   final void Function(int lineIndex, int delta) onQty;
 
-  String? get _platformAsset {
-    switch (platform.id) {
-      case 'snap':
-        return ImageAssets.snapchatIcon;
-      case 'tiktok':
-        return ImageAssets.homeInfluencerTiktok;
-      case 'wa':
-        return ImageAssets.whatsappIcon;
-      default:
-        return null;
-    }
+  String get _platformAsset {
+    return CompanyCampaignPlatformAssets.assetFor(
+      platform.name.trim().isNotEmpty ? platform.name : platform.id,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final String? asset = _platformAsset;
+    final String asset = _platformAsset;
     return InfluencerPanelCard(
       padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 12.h),
       child: Column(
         children: <Widget>[
           Row(
             children: <Widget>[
-              if (asset != null) ...<Widget>[
-                Image.asset(asset, width: 25.w, height: 25.h),
-                SizedBox(width: 6.w),
-              ],
+              Image.asset(asset, width: 25.w, height: 25.h),
+              SizedBox(width: 6.w),
               Flexible(
                 child: Text(
                   platform.name,

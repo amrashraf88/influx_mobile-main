@@ -2,6 +2,7 @@ import 'package:adzmavall/core/localization/app_strings.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_campaigns_view_data.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_campaign_models.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_back_app_bar.dart';
+import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_status_chip.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -110,10 +111,11 @@ class _ProfileCard extends StatelessWidget {
                     .map(
                       (String p) => Padding(
                         padding: EdgeInsets.only(right: 8.w),
-                        child: Icon(
-                          _socialIcon(p),
-                          size: 22.sp,
-                          color: const Color(0xFF64748B),
+                        child: Image.asset(
+                          CompanyCampaignPlatformAssets.assetFor(p),
+                          width: 22.w,
+                          height: 22.w,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     )
@@ -146,19 +148,6 @@ class _ProfileCard extends StatelessWidget {
       ),
     );
   }
-
-  IconData _socialIcon(String p) {
-    switch (p) {
-      case 'youtube':
-        return Icons.play_circle_outline;
-      case 'tiktok':
-        return Icons.music_note_outlined;
-      case 'facebook':
-        return Icons.facebook_outlined;
-      default:
-        return Icons.link;
-    }
-  }
 }
 
 class _FilesLinksCard extends StatelessWidget {
@@ -181,8 +170,10 @@ class _FilesLinksCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _SectionHeader(
-            title: AppStrings.of(locale, 'company_campaign_files_count')
-                .replaceAll('{count}', '${detail.files.length}'),
+            title: AppStrings.of(
+              locale,
+              'company_campaign_files_count',
+            ).replaceAll('{count}', '${detail.files.length}'),
           ),
           ...detail.files.map((({String name, String sizeLabel}) f) {
             return Padding(
@@ -273,7 +264,11 @@ class _SectionHeader extends StatelessWidget {
             color: AppColors.brandBlue.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.inventory_2_outlined, color: AppColors.brandBlue, size: 18.sp),
+          child: Icon(
+            Icons.inventory_2_outlined,
+            color: AppColors.brandBlue,
+            size: 18.sp,
+          ),
         ),
         SizedBox(width: 8.w),
         Text(
@@ -472,7 +467,11 @@ class _PaymentTermsCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.inventory_2_outlined, color: AppColors.brandBlue, size: 20.sp),
+              Icon(
+                Icons.inventory_2_outlined,
+                color: AppColors.brandBlue,
+                size: 20.sp,
+              ),
               SizedBox(width: 8.w),
               Text(
                 AppStrings.of(locale, 'company_campaign_payment_terms'),

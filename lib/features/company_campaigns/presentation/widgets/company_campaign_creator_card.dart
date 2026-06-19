@@ -1,4 +1,5 @@
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_campaign_models.dart';
+import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_status_chip.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -107,22 +108,13 @@ class CompanyCampaignCreatorCard extends StatelessWidget {
 }
 
 Widget _platformIcon(String platform) {
-  IconData icon;
-  switch (platform) {
-    case 'youtube':
-      icon = Icons.play_circle_outline;
-      break;
-    case 'tiktok':
-      icon = Icons.music_note_outlined;
-      break;
-    case 'facebook':
-      icon = Icons.facebook_outlined;
-      break;
-    default:
-      icon = Icons.link;
-  }
   return Padding(
     padding: EdgeInsets.only(left: 4.w),
-    child: Icon(icon, size: 16.sp, color: const Color(0xFF64748B)),
+    child: Image.asset(
+      CompanyCampaignPlatformAssets.assetFor(platform),
+      width: 16.w,
+      height: 16.w,
+      fit: BoxFit.contain,
+    ),
   );
 }
