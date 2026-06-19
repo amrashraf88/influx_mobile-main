@@ -33,6 +33,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _age = TextEditingController();
   final TextEditingController _street = TextEditingController();
   final TextEditingController _mawthooq = TextEditingController();
+  final TextEditingController _phone = TextEditingController();
+
+  // Gender is required by the profile-update endpoint.
+  static const List<LookupItem> _genders = <LookupItem>[
+    LookupItem(value: 'male', label: 'Male'),
+    LookupItem(value: 'female', label: 'Female'),
+  ];
 
   List<LookupItem> _cities = <LookupItem>[];
   List<LookupItem> _directions = <LookupItem>[];
@@ -40,6 +47,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   String? _city;
   String? _direction;
+  String? _gender;
   final Set<String> _selectedCategories = <String>{};
 
   bool _loading = true;
@@ -77,8 +85,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _age.text = _str(p['age']);
       _street.text = _str(p['street']);
       _mawthooq.text = _str(p['mawthooq_license_number']);
+      _phone.text = _str(p['phone_number']).isNotEmpty
+          ? _str(p['phone_number'])
+          : _str(p['phone']);
       _city = _valueOf(p['city']);
       _direction = _valueOf(p['city_direction']);
+      _gender = _valueOf(p['gender'])?.toLowerCase();
       final Object? cats = p['categories'];
       if (cats is List) {
         for (final Object? c in cats) {
@@ -118,6 +130,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'mawthooq_license_number': _mawthooq.text.trim(),
       if (_city != null) 'city': _city,
       if (_direction != null) 'city_direction': _direction,
+      // Required by the backend (validation.required otherwise).
+      if (_gender != null && _gender!.isNotEmpty) 'gender': _gender,
+      'phone_number': _phone.text.trim(),
       'categories': _selectedCategories
           .map(int.tryParse)
           .whereType<int>()
@@ -145,6 +160,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _age.dispose();
     _street.dispose();
     _mawthooq.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -193,7 +209,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ],
                     _field('Full Name', _fullName),
                     _field('Full Name (Arabic)', _fullNameAr),
+                    _field(
+                      'Phone Number',
+                      _phone,
+                      keyboard: TextInputType.phone,
+                    ),
                     _field('Age', _age, keyboard: TextInputType.number),
+                    _dropdown(
+                      'Gender',
+                      _genders,
+                      _gender,
+                      (String? v) => setState(() => _gender = v),
+                    ),
                     if (_cities.isNotEmpty)
                       _dropdown(
                         'City',

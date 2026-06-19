@@ -232,10 +232,9 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       ],
     );
     if (r == null) return;
-    final Map<String, dynamic> body = <String, dynamic>{
-      'keywords': _split(r['keywords']),
-      'audience_age_ranges': _split(r['age_ranges']),
-    };
+    final Map<String, dynamic> body = _requiredProfileBase()
+      ..['keywords'] = _split(r['keywords'])
+      ..['audience_age_ranges'] = _split(r['age_ranges']);
     await _runWrite(() => _repo.updateProfile(body));
   }
 
@@ -257,12 +256,13 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       ],
     );
     if (r == null) return;
-    final Map<String, dynamic> body = <String, dynamic>{
-      if (_has(r['coverage_price']))
-        'coverage_price': int.tryParse(r['coverage_price']!),
-      if (_has(r['video_price'])) 'video_price': int.tryParse(r['video_price']!),
-    };
-    if (body.isEmpty) return;
+    final Map<String, dynamic> body = _requiredProfileBase();
+    if (_has(r['coverage_price'])) {
+      body['coverage_price'] = int.tryParse(r['coverage_price']!);
+    }
+    if (_has(r['video_price'])) {
+      body['video_price'] = int.tryParse(r['video_price']!);
+    }
     await _runWrite(() => _repo.updateProfile(body));
   }
 
@@ -280,7 +280,8 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
         CreatorFormField(
           key: 'gender',
           label: 'Gender',
-          initial: (j['gender'] ?? '').toString(),
+          initial: (j['gender'] ?? '').toString().toLowerCase(),
+          options: const <String>['male', 'female'],
         ),
         CreatorFormField(
           key: 'age',
@@ -291,13 +292,72 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       ],
     );
     if (r == null) return;
-    final Map<String, dynamic> body = <String, dynamic>{
-      if (_has(r['city'])) 'city': r['city'],
-      if (_has(r['gender'])) 'gender': r['gender'],
-      if (_has(r['age'])) 'age': int.tryParse(r['age']!),
-    };
-    if (body.isEmpty) return;
+    final Map<String, dynamic> body = _requiredProfileBase();
+    if (_has(r['city'])) body['city'] = r['city'];
+    if (_has(r['gender'])) body['gender'] = r['gender']!.toLowerCase();
+    if (_has(r['age'])) body['age'] = int.tryParse(r['age']!);
     await _runWrite(() => _repo.updateProfile(body));
+  }
+
+  /// Pulls the fields the profile-update endpoint requires from the loaded
+  /// profile so partial edits don't fail backend validation (gender,
+  /// phone_number, etc. are required on every PATCH).
+  Map<String, dynamic> _requiredProfileBase() {
+    final Map<String, dynamic> j = _data.rawProfile;
+    String? val(List<String> keys) {
+      for (final String k in keys) {
+        final Object? v = j[k];
+        if (v == null) continue;
+        if (v is Map) {
+          final Object? inner = v['value'] ?? v['id'] ?? v['name'];
+          final String s = inner?.toString().trim() ?? '';
+          if (s.isNotEmpty) return s;
+          continue;
+        }
+        final String s = v.toString().trim();
+        if (s.isNotEmpty && s != 'null') return s;
+      }
+      return null;
+    }
+
+    final Map<String, dynamic> body = <String, dynamic>{};
+    void put(String key, String? v) {
+      if (v != null && v.isNotEmpty) body[key] = v;
+    }
+
+    put('full_name', val(<String>['full_name', 'fullName', 'name']));
+    put('full_name_ar', val(<String>['full_name_ar', 'fullNameAr']));
+    put('street', val(<String>['street']));
+    put('city', val(<String>['city']));
+    put('city_direction', val(<String>['city_direction', 'cityDirection']));
+    put('gender', val(<String>['gender'])?.toLowerCase());
+    put(
+      'phone_number',
+      val(<String>['phone_number', 'phoneNumber', 'phone']),
+    );
+    final String? age = val(<String>['age']);
+    if (age != null) {
+      final int? a = int.tryParse(age);
+      if (a != null) body['age'] = a;
+    }
+    body['mawthooq_license_number'] =
+        val(<String>[
+          'mawthooq_license_number',
+          'mawthooqLicenseNumber',
+          'license_number',
+        ]) ??
+        '';
+    final Object? cats = j['categories'];
+    if (cats is List) {
+      final List<int> ids = cats
+          .map((Object? c) => c is Map ? (c['id'] ?? c['value']) : c)
+          .where((Object? e) => e != null)
+          .map((Object? e) => int.tryParse(e.toString()))
+          .whereType<int>()
+          .toList();
+      if (ids.isNotEmpty) body['categories'] = ids;
+    }
+    return body;
   }
 
   Future<void> _runWrite(Future<void> Function() action) async {

@@ -155,10 +155,15 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
       ]),
       clientSubtitle: pick(<String>['client_subtitle', 'subtitle', 'campaign']),
       logoAsset: ApiMedia.resolve(
-        pick(<String>['logo_url', 'logo', 'image_url', 'cover']),
+        pick(<String>['logo_asset', 'logo_url', 'logo', 'image_url', 'cover']),
       ),
       platformName: pick(<String>['platform_name', 'platform']),
-      platformIconAsset: ImageAssets.homeInfluencerTiktok,
+      platformIconAsset: () {
+        final String icon = ApiMedia.resolve(
+          pick(<String>['platform_icon_asset', 'platform_icon']),
+        );
+        return icon.isNotEmpty ? icon : ImageAssets.homeInfluencerTiktok;
+      }(),
       priceLabel: price,
       deliveryDateLabel: pick(<String>[
         'delivery_date_label',
@@ -166,9 +171,106 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
         'date',
       ]),
       status: _statusFromJson(pick(<String>['status', 'state'])),
-      details: _emptyDetails,
-      attachments: _emptyAttachments,
-      financial: _emptyFinancial,
+      details: _detailsFromJson(json['details']),
+      attachments: _attachmentsFromJson(json['attachments']),
+      financial: _financialFromJson(json['financial']),
+      publicationLinks: _stringList(json['publication_links']),
+    );
+  }
+
+  static String _s(Object? v) =>
+      (v == null || v.toString() == 'null') ? '' : v.toString();
+
+  static List<String> _stringList(Object? v) {
+    if (v is List) {
+      return v
+          .map((Object? e) => _s(e).trim())
+          .where((String s) => s.isNotEmpty)
+          .toList();
+    }
+    if (v is String && v.trim().isNotEmpty) {
+      return <String>[v.trim()];
+    }
+    return const <String>[];
+  }
+
+  static InfluencerOrderDetails _detailsFromJson(Object? raw) {
+    if (raw is! Map) return _emptyDetails;
+    final Map<String, dynamic> m = Map<String, dynamic>.from(raw);
+    String g(List<String> keys) {
+      for (final String k in keys) {
+        final String s = _s(m[k]).trim();
+        if (s.isNotEmpty) return s;
+      }
+      return '';
+    }
+
+    return InfluencerOrderDetails(
+      title: g(<String>['title']),
+      orderId: g(<String>['order_id', 'id']),
+      description: g(<String>['description']),
+      clientNotes: g(<String>['client_notes', 'notes']),
+      clientWebsite: g(<String>['client_website', 'website']),
+      deliveryDate: g(<String>['delivery_date']),
+      deliveryTime: g(<String>['delivery_time']),
+      campaignObjective: _stringList(m['campaign_objective']),
+      targetFollowers: g(<String>['target_followers']),
+      targetAgeGroup: g(<String>['target_age_group']),
+      influencerCategory: g(<String>['influencer_category']),
+      platforms: _stringList(m['platforms']),
+    );
+  }
+
+  static InfluencerOrderAttachments _attachmentsFromJson(Object? raw) {
+    if (raw is! Map) return _emptyAttachments;
+    final Map<String, dynamic> m = Map<String, dynamic>.from(raw);
+    final Object? filesRaw = m['files'];
+    final List<InfluencerOrderFile> files =
+        (filesRaw is List ? filesRaw : const <dynamic>[])
+            .whereType<Map<dynamic, dynamic>>()
+            .map((Map<dynamic, dynamic> f) {
+              final Map<String, dynamic> fm = Map<String, dynamic>.from(f);
+              return InfluencerOrderFile(
+                name: _s(fm['name']),
+                sizeLabel: _s(fm['size_label'] ?? fm['size']),
+              );
+            })
+            .toList();
+    final Object? taxPath = m['tax_invoice_path'];
+    return InfluencerOrderAttachments(
+      files: files,
+      links: _stringList(m['links']),
+      notes: _s(m['notes']),
+      taxInvoicePath: _s(taxPath).isEmpty ? null : _s(taxPath),
+    );
+  }
+
+  static InfluencerOrderFinancial _financialFromJson(Object? raw) {
+    if (raw is! Map) return _emptyFinancial;
+    final Map<String, dynamic> m = Map<String, dynamic>.from(raw);
+    final Object? itemsRaw = m['items'];
+    final List<InfluencerOrderFinancialItem> items =
+        (itemsRaw is List ? itemsRaw : const <dynamic>[])
+            .whereType<Map<dynamic, dynamic>>()
+            .map((Map<dynamic, dynamic> i) {
+              final Map<String, dynamic> im = Map<String, dynamic>.from(i);
+              return InfluencerOrderFinancialItem(
+                label: _s(im['label'] ?? im['name']),
+                amount: _s(im['amount'] ?? im['value'] ?? im['price']),
+                icon: _s(im['icon']),
+              );
+            })
+            .toList();
+    return InfluencerOrderFinancial(
+      platformTotal: _s(m['platform_total']),
+      items: items,
+      totalOrder: _s(m['total_order']),
+      listingFee: _s(m['listing_fee']),
+      totalBeforeVat: _s(m['total_before_vat']),
+      taxAmount: _s(m['tax_amount']),
+      totalWithTax: _s(m['total_with_tax']),
+      deposit: _s(m['deposit']),
+      released: _s(m['released']),
     );
   }
 
