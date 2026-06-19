@@ -6,11 +6,14 @@ import 'package:adzmavall/utils/imageassets.dart';
 /// A single social account row in the "Accounts" tab.
 class CreatorAccountMetric {
   const CreatorAccountMetric({
+    required this.id,
     required this.label,
     required this.asset,
     required this.followers,
   });
 
+  /// Backend id (empty for sample/fallback rows that cannot be deleted).
+  final String id;
   final String label;
   final String asset;
   final String followers;
@@ -18,15 +21,23 @@ class CreatorAccountMetric {
 
 /// A single client logo in the "Clients" tab.
 class CreatorClientItem {
-  const CreatorClientItem({required this.name, required this.logoUrl});
+  const CreatorClientItem({
+    required this.id,
+    required this.name,
+    required this.handle,
+    required this.logoUrl,
+  });
 
+  final String id;
   final String name;
+  final String handle;
   final String logoUrl;
 }
 
 /// A single platform pricing card in the "Ad Price" tab.
 class CreatorAdPriceItem {
   const CreatorAdPriceItem({
+    required this.id,
     required this.label,
     required this.asset,
     required this.followers,
@@ -34,6 +45,7 @@ class CreatorAdPriceItem {
     required this.videoPrice,
   });
 
+  final String id;
   final String label;
   final String asset;
   final String followers;
@@ -43,8 +55,13 @@ class CreatorAdPriceItem {
 
 /// A single ad preview in the "Ads" tab.
 class CreatorAdPreviewItem {
-  const CreatorAdPreviewItem({required this.title, required this.imageUrl});
+  const CreatorAdPreviewItem({
+    required this.id,
+    required this.title,
+    required this.imageUrl,
+  });
 
+  final String id;
   final String title;
   final String imageUrl;
 }
@@ -78,6 +95,7 @@ class CreatorProfileTabData {
       accounts: InfluencerProfileViewData.accountMetrics
           .map(
             (InfluencerAccountMetric m) => CreatorAccountMetric(
+              id: '',
               label: m.label,
               asset: m.asset,
               followers: '399.6k',
@@ -86,14 +104,19 @@ class CreatorProfileTabData {
           .toList(),
       clients: InfluencerProfileViewData.clients
           .map(
-            (InfluencerClientItem c) =>
-                CreatorClientItem(name: c.name, logoUrl: c.logoUrl),
+            (InfluencerClientItem c) => CreatorClientItem(
+              id: '',
+              name: c.name,
+              handle: '',
+              logoUrl: c.logoUrl,
+            ),
           )
           .toList(),
       clientCategories: InfluencerProfileViewData.clientCategories,
       adPriceItems: InfluencerProfileViewData.adPriceItems
           .map(
             (InfluencerAdPriceItem p) => CreatorAdPriceItem(
+              id: '',
               label: p.label,
               asset: p.asset ?? ImageAssets.instagramColoredIcon,
               followers: '399.6k',
@@ -104,8 +127,11 @@ class CreatorProfileTabData {
           .toList(),
       ads: InfluencerProfileViewData.adPreviews
           .map(
-            (InfluencerAdPreviewItem a) =>
-                CreatorAdPreviewItem(title: a.title, imageUrl: a.imageUrl),
+            (InfluencerAdPreviewItem a) => CreatorAdPreviewItem(
+              id: '',
+              title: a.title,
+              imageUrl: a.imageUrl,
+            ),
           )
           .toList(),
       keywords: InfluencerProfileViewData.keywords,
@@ -191,6 +217,7 @@ class CreatorProfileTabData {
       'type',
     ]);
     return CreatorAccountMetric(
+      id: _pickId(json),
       label: _platformLabel(platform),
       asset: _platformAsset(platform),
       followers: _formatCount(
@@ -208,6 +235,7 @@ class CreatorProfileTabData {
 
   static CreatorClientItem _clientFromJson(Map<String, dynamic> json) {
     return CreatorClientItem(
+      id: _pickId(json),
       name: _pick(json, <String>[
         'name',
         'client_name',
@@ -215,6 +243,12 @@ class CreatorProfileTabData {
         'title',
         'company_name',
         'companyName',
+      ]),
+      handle: _pick(json, <String>[
+        'handle',
+        'username',
+        'user_name',
+        'account',
       ]),
       logoUrl: ApiMedia.resolve(
         _pick(json, <String>[
@@ -241,6 +275,7 @@ class CreatorProfileTabData {
       'type',
     ]);
     return CreatorAdPriceItem(
+      id: _pickId(json),
       label: _platformLabel(platform),
       asset: _platformAsset(platform),
       followers: _formatCount(
@@ -276,6 +311,7 @@ class CreatorProfileTabData {
 
   static CreatorAdPreviewItem _adPreviewFromJson(Map<String, dynamic> json) {
     return CreatorAdPreviewItem(
+      id: _pickId(json),
       title: _pick(json, <String>[
         'title',
         'name',
@@ -315,6 +351,9 @@ class CreatorProfileTabData {
     }
     return '';
   }
+
+  static String _pickId(Map<String, dynamic> json) =>
+      _pick(json, <String>['id', '_id', 'uuid', 'uid']);
 
   static List<String> _stringList(
     Map<String, dynamic> json,

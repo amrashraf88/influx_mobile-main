@@ -1,5 +1,7 @@
 import 'package:adzmavall/core/config/api_endpoints.dart';
+import 'package:adzmavall/core/network/api_error_parser.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
 import 'package:dio/dio.dart';
 
 /// Aggregates everything the creator profile screen needs from the live API:
@@ -50,6 +52,68 @@ class CreatorProfileRepository {
       return _unwrapList(res.data);
     } on Object {
       return const <Map<String, dynamic>>[];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Writes — each throws [ApiException] with a human message on failure so the
+  // caller can surface it in a snackbar.
+  // ---------------------------------------------------------------------------
+
+  /// `PATCH /auth/user/profile/content-creator` — update profile fields
+  /// (used by the Overview / Ad Price edit forms).
+  Future<void> updateProfile(Map<String, dynamic> body) =>
+      _write(() => _dio.patch<dynamic>(
+            ApiUrlResolver.resolve(
+              ApiEndpoints.authUserProfileContentCreatorPath,
+            ),
+            data: body,
+          ));
+
+  /// `POST /auth/user/social-accounts` — add a linked social account.
+  Future<void> createSocialAccount(Map<String, dynamic> body) =>
+      _write(() => _dio.post<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserSocialAccountsPath),
+            data: body,
+          ));
+
+  /// `DELETE /auth/user/social-accounts/{id}`.
+  Future<void> deleteSocialAccount(String id) =>
+      _write(() => _dio.delete<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserSocialAccountPath(id)),
+          ));
+
+  /// `POST /auth/user/clients` — add a client.
+  Future<void> createClient(Map<String, dynamic> body) =>
+      _write(() => _dio.post<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserClientsPath),
+            data: body,
+          ));
+
+  /// `DELETE /auth/user/clients/{id}`.
+  Future<void> deleteClient(String id) =>
+      _write(() => _dio.delete<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserClientPath(id)),
+          ));
+
+  /// `POST /auth/user/ads` — add an ad / portfolio item.
+  Future<void> createAd(Map<String, dynamic> body) =>
+      _write(() => _dio.post<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserAdsPath),
+            data: body,
+          ));
+
+  /// `DELETE /auth/user/ads/{id}`.
+  Future<void> deleteAd(String id) =>
+      _write(() => _dio.delete<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserAdPath(id)),
+          ));
+
+  Future<void> _write(Future<Response<dynamic>> Function() request) async {
+    try {
+      await request();
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
     }
   }
 

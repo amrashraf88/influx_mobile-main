@@ -12,6 +12,8 @@ class InfluencerProfileTabContent extends StatelessWidget {
     required this.tabData,
     this.rawProfile = const <String, dynamic>{},
     this.creatorType = 'influencer',
+    this.editing = false,
+    this.onDelete,
   });
 
   final int index;
@@ -19,23 +21,60 @@ class InfluencerProfileTabContent extends StatelessWidget {
   final Map<String, dynamic> rawProfile;
   final String creatorType;
 
+  /// Whether the current list tab is in edit mode (shows delete affordances).
+  final bool editing;
+
+  /// Called with an item id when the user taps its delete badge.
+  final void Function(String id)? onDelete;
+
   @override
   Widget build(BuildContext context) {
     switch (index) {
       case 1:
-        return _ClientsPanel(data: tabData);
+        return _ClientsPanel(
+          data: tabData,
+          editing: editing,
+          onDelete: onDelete,
+        );
       case 2:
         return _AdPricePanel(items: tabData.adPriceItems);
       case 3:
-        return _AdsPanel(ads: tabData.ads);
+        return _AdsPanel(ads: tabData.ads, editing: editing, onDelete: onDelete);
       case 4:
         return _OverviewPanel(data: tabData);
       case 5:
         return _DetailsPanel(rawProfile: rawProfile, creatorType: creatorType);
       case 0:
       default:
-        return _AccountsPanel(accounts: tabData.accounts);
+        return _AccountsPanel(
+          accounts: tabData.accounts,
+          editing: editing,
+          onDelete: onDelete,
+        );
     }
+  }
+}
+
+/// Small red delete badge overlaid on list items while editing.
+class _DeleteBadge extends StatelessWidget {
+  const _DeleteBadge({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 22.w,
+        height: 22.w,
+        decoration: const BoxDecoration(
+          color: Color(0xFFFF4D4F),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Icons.close_rounded, color: AppColors.white, size: 14.sp),
+      ),
+    );
   }
 }
 
@@ -222,9 +261,15 @@ String _pickProfileValue(Map<String, dynamic> json, List<String> keys) {
 }
 
 class _AccountsPanel extends StatelessWidget {
-  const _AccountsPanel({required this.accounts});
+  const _AccountsPanel({
+    required this.accounts,
+    this.editing = false,
+    this.onDelete,
+  });
 
   final List<CreatorAccountMetric> accounts;
+  final bool editing;
+  final void Function(String id)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +285,21 @@ class _AccountsPanel extends StatelessWidget {
           childAspectRatio: 0.70,
         ),
         itemBuilder: (BuildContext context, int index) {
-          return _AccountMetricTile(metric: accounts[index]);
+          final CreatorAccountMetric metric = accounts[index];
+          final bool deletable =
+              editing && metric.id.isNotEmpty && onDelete != null;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              _AccountMetricTile(metric: metric),
+              if (deletable)
+                Positioned(
+                  top: -4.h,
+                  right: -2.w,
+                  child: _DeleteBadge(onTap: () => onDelete!(metric.id)),
+                ),
+            ],
+          );
         },
       ),
     );
@@ -297,9 +356,15 @@ class _AccountMetricTile extends StatelessWidget {
 }
 
 class _ClientsPanel extends StatelessWidget {
-  const _ClientsPanel({required this.data});
+  const _ClientsPanel({
+    required this.data,
+    this.editing = false,
+    this.onDelete,
+  });
 
   final CreatorProfileTabData data;
+  final bool editing;
+  final void Function(String id)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -353,7 +418,21 @@ class _ClientsPanel extends StatelessWidget {
               childAspectRatio: 0.88,
             ),
             itemBuilder: (BuildContext context, int index) {
-              return _ClientTile(item: data.clients[index]);
+              final CreatorClientItem item = data.clients[index];
+              final bool deletable =
+                  editing && item.id.isNotEmpty && onDelete != null;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  _ClientTile(item: item),
+                  if (deletable)
+                    Positioned(
+                      top: -4.h,
+                      right: -2.w,
+                      child: _DeleteBadge(onTap: () => onDelete!(item.id)),
+                    ),
+                ],
+              );
             },
           ),
         ),
@@ -659,9 +738,11 @@ class _ChipWrap extends StatelessWidget {
 }
 
 class _AdsPanel extends StatelessWidget {
-  const _AdsPanel({required this.ads});
+  const _AdsPanel({required this.ads, this.editing = false, this.onDelete});
 
   final List<CreatorAdPreviewItem> ads;
+  final bool editing;
+  final void Function(String id)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -671,18 +752,28 @@ class _AdsPanel extends StatelessWidget {
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: ads
-                .map(
-                  (CreatorAdPreviewItem item) => Padding(
-                    padding: EdgeInsetsDirectional.only(end: 16.w),
-                    child: SizedBox(
-                      width: 181.w,
-                      height: 308.h,
-                      child: _AdPreviewCard(item: item),
-                    ),
+            children: ads.map((CreatorAdPreviewItem item) {
+              final bool deletable =
+                  editing && item.id.isNotEmpty && onDelete != null;
+              return Padding(
+                padding: EdgeInsetsDirectional.only(end: 16.w),
+                child: SizedBox(
+                  width: 181.w,
+                  height: 308.h,
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(child: _AdPreviewCard(item: item)),
+                      if (deletable)
+                        PositionedDirectional(
+                          top: 10.h,
+                          end: 10.w,
+                          child: _DeleteBadge(onTap: () => onDelete!(item.id)),
+                        ),
+                    ],
                   ),
-                )
-                .toList(),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ),
