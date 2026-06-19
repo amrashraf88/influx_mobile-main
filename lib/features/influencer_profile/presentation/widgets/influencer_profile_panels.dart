@@ -1,4 +1,4 @@
-import 'package:adzmavall/features/influencer_profile/presentation/models/influencer_profile_view_data.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/models/creator_profile_tab_data.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_panel_card.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,11 +9,13 @@ class InfluencerProfileTabContent extends StatelessWidget {
   const InfluencerProfileTabContent({
     super.key,
     required this.index,
+    required this.tabData,
     this.rawProfile = const <String, dynamic>{},
     this.creatorType = 'influencer',
   });
 
   final int index;
+  final CreatorProfileTabData tabData;
   final Map<String, dynamic> rawProfile;
   final String creatorType;
 
@@ -21,18 +23,18 @@ class InfluencerProfileTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (index) {
       case 1:
-        return const _ClientsPanel();
+        return _ClientsPanel(data: tabData);
       case 2:
-        return const _AdPricePanel();
+        return _AdPricePanel(items: tabData.adPriceItems);
       case 3:
-        return const _AdsPanel();
+        return _AdsPanel(ads: tabData.ads);
       case 4:
-        return const _OverviewPanel();
+        return _OverviewPanel(data: tabData);
       case 5:
         return _DetailsPanel(rawProfile: rawProfile, creatorType: creatorType);
       case 0:
       default:
-        return const _AccountsPanel();
+        return _AccountsPanel(accounts: tabData.accounts);
     }
   }
 }
@@ -220,7 +222,9 @@ String _pickProfileValue(Map<String, dynamic> json, List<String> keys) {
 }
 
 class _AccountsPanel extends StatelessWidget {
-  const _AccountsPanel();
+  const _AccountsPanel({required this.accounts});
+
+  final List<CreatorAccountMetric> accounts;
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +232,7 @@ class _AccountsPanel extends StatelessWidget {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: InfluencerProfileViewData.accountMetrics.length,
+        itemCount: accounts.length,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
           mainAxisSpacing: 18.h,
@@ -236,9 +240,7 @@ class _AccountsPanel extends StatelessWidget {
           childAspectRatio: 0.70,
         ),
         itemBuilder: (BuildContext context, int index) {
-          return _AccountMetricTile(
-            metric: InfluencerProfileViewData.accountMetrics[index],
-          );
+          return _AccountMetricTile(metric: accounts[index]);
         },
       ),
     );
@@ -248,7 +250,7 @@ class _AccountsPanel extends StatelessWidget {
 class _AccountMetricTile extends StatelessWidget {
   const _AccountMetricTile({required this.metric});
 
-  final InfluencerAccountMetric metric;
+  final CreatorAccountMetric metric;
 
   @override
   Widget build(BuildContext context) {
@@ -278,65 +280,72 @@ class _AccountMetricTile extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: 5.h),
-        Text(
-          '399.6k',
-          style: TextStyle(
-            color: const Color(0xFF9AA2AE),
-            fontSize: 11.5.sp,
-            fontWeight: FontWeight.w500,
+        if (metric.followers.isNotEmpty) ...<Widget>[
+          SizedBox(height: 5.h),
+          Text(
+            metric.followers,
+            style: TextStyle(
+              color: const Color(0xFF9AA2AE),
+              fontSize: 11.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
 }
 
 class _ClientsPanel extends StatelessWidget {
-  const _ClientsPanel();
+  const _ClientsPanel({required this.data});
+
+  final CreatorProfileTabData data;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        SizedBox(
-          height: 34.h,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: InfluencerProfileViewData.clientCategories.length,
-            separatorBuilder: (_, _) => SizedBox(width: 24.w),
-            itemBuilder: (BuildContext context, int index) {
-              final bool selected = index == 0;
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    InfluencerProfileViewData.clientCategories[index],
-                    style: TextStyle(
+        if (data.clientCategories.isNotEmpty)
+          SizedBox(
+            height: 34.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: data.clientCategories.length,
+              separatorBuilder: (_, _) => SizedBox(width: 24.w),
+              itemBuilder: (BuildContext context, int index) {
+                final bool selected = index == 0;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      data.clientCategories[index],
+                      style: TextStyle(
+                        color: selected
+                            ? AppColors.brandBlue
+                            : const Color(0xFF787F8A),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      width: 86.w,
+                      height: 2.h,
                       color: selected
                           ? AppColors.brandBlue
-                          : const Color(0xFF787F8A),
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
+                          : Colors.transparent,
                     ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Container(
-                    width: 86.w,
-                    height: 2.h,
-                    color: selected ? AppColors.brandBlue : Colors.transparent,
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
-        ),
         SizedBox(height: 12.h),
         InfluencerPanelCard(
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: InfluencerProfileViewData.clients.length,
+            itemCount: data.clients.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               mainAxisSpacing: 18.h,
@@ -344,9 +353,7 @@ class _ClientsPanel extends StatelessWidget {
               childAspectRatio: 0.88,
             ),
             itemBuilder: (BuildContext context, int index) {
-              return _ClientTile(
-                item: InfluencerProfileViewData.clients[index],
-              );
+              return _ClientTile(item: data.clients[index]);
             },
           ),
         ),
@@ -358,7 +365,7 @@ class _ClientsPanel extends StatelessWidget {
 class _ClientTile extends StatelessWidget {
   const _ClientTile({required this.item});
 
-  final InfluencerClientItem item;
+  final CreatorClientItem item;
 
   @override
   Widget build(BuildContext context) {
@@ -404,14 +411,16 @@ class _ClientTile extends StatelessWidget {
 }
 
 class _AdPricePanel extends StatelessWidget {
-  const _AdPricePanel();
+  const _AdPricePanel({required this.items});
+
+  final List<CreatorAdPriceItem> items;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: InfluencerProfileViewData.adPriceItems
+      children: items
           .map(
-            (InfluencerAdPriceItem item) => Padding(
+            (CreatorAdPriceItem item) => Padding(
               padding: EdgeInsets.only(bottom: 14.h),
               child: _AdPriceCard(item: item),
             ),
@@ -424,7 +433,7 @@ class _AdPricePanel extends StatelessWidget {
 class _AdPriceCard extends StatelessWidget {
   const _AdPriceCard({required this.item});
 
-  final InfluencerAdPriceItem item;
+  final CreatorAdPriceItem item;
 
   @override
   Widget build(BuildContext context) {
@@ -434,7 +443,7 @@ class _AdPriceCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Image.asset(item.asset!, width: 25.w, height: 25.h),
+              Image.asset(item.asset, width: 25.w, height: 25.h),
               SizedBox(width: 6.w),
               Expanded(
                 child: Text(
@@ -446,20 +455,22 @@ class _AdPriceCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const _FollowerPill(),
-              SizedBox(width: 8.w),
+              if (item.followers.isNotEmpty) ...<Widget>[
+                _FollowerPill(followers: item.followers),
+                SizedBox(width: 8.w),
+              ],
               const _OpenSmallButton(),
             ],
           ),
           Divider(height: 22.h, color: const Color(0xFFE7E9ED)),
           Row(
             children: <Widget>[
-              const Expanded(
-                child: _PriceMetric(label: 'Coverage', value: '17,600'),
+              Expanded(
+                child: _PriceMetric(label: 'Coverage', value: item.coverage),
               ),
               SizedBox(width: 20.w),
-              const Expanded(
-                child: _PriceMetric(label: 'Video', value: '3,500'),
+              Expanded(
+                child: _PriceMetric(label: 'Video', value: item.videoPrice),
               ),
             ],
           ),
@@ -470,7 +481,9 @@ class _AdPriceCard extends StatelessWidget {
 }
 
 class _FollowerPill extends StatelessWidget {
-  const _FollowerPill();
+  const _FollowerPill({required this.followers});
+
+  final String followers;
 
   @override
   Widget build(BuildContext context) {
@@ -481,7 +494,7 @@ class _FollowerPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999.r),
       ),
       child: Text(
-        '399.6k Followers',
+        '$followers Followers',
         style: TextStyle(
           color: const Color(0xFFE6C44E),
           fontSize: 8.5.sp,
@@ -560,7 +573,9 @@ class _PriceMetric extends StatelessWidget {
 }
 
 class _OverviewPanel extends StatelessWidget {
-  const _OverviewPanel();
+  const _OverviewPanel({required this.data});
+
+  final CreatorProfileTabData data;
 
   @override
   Widget build(BuildContext context) {
@@ -569,19 +584,23 @@ class _OverviewPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const _OverviewSectionTitle('Key Words'),
-          SizedBox(height: 14.h),
-          const _ChipWrap(values: InfluencerProfileViewData.keywords),
-          SizedBox(height: 20.h),
-          const _OverviewSectionTitle('Age'),
-          SizedBox(height: 12.h),
-          const _ChipWrap(values: <String>['18-25']),
-          SizedBox(height: 20.h),
-          const _OverviewSectionTitle('Platforms'),
-          SizedBox(height: 12.h),
-          const _ChipWrap(
-            values: <String>['Tiktok', 'Instagram', 'Tiktok', 'Instagram'],
-          ),
+          if (data.keywords.isNotEmpty) ...<Widget>[
+            const _OverviewSectionTitle('Key Words'),
+            SizedBox(height: 14.h),
+            _ChipWrap(values: data.keywords),
+            SizedBox(height: 20.h),
+          ],
+          if (data.ageRanges.isNotEmpty) ...<Widget>[
+            const _OverviewSectionTitle('Age'),
+            SizedBox(height: 12.h),
+            _ChipWrap(values: data.ageRanges),
+            SizedBox(height: 20.h),
+          ],
+          if (data.platforms.isNotEmpty) ...<Widget>[
+            const _OverviewSectionTitle('Platforms'),
+            SizedBox(height: 12.h),
+            _ChipWrap(values: data.platforms),
+          ],
         ],
       ),
     );
@@ -640,7 +659,9 @@ class _ChipWrap extends StatelessWidget {
 }
 
 class _AdsPanel extends StatelessWidget {
-  const _AdsPanel();
+  const _AdsPanel({required this.ads});
+
+  final List<CreatorAdPreviewItem> ads;
 
   @override
   Widget build(BuildContext context) {
@@ -650,9 +671,9 @@ class _AdsPanel extends StatelessWidget {
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: InfluencerProfileViewData.adPreviews
+            children: ads
                 .map(
-                  (InfluencerAdPreviewItem item) => Padding(
+                  (CreatorAdPreviewItem item) => Padding(
                     padding: EdgeInsetsDirectional.only(end: 16.w),
                     child: SizedBox(
                       width: 181.w,
@@ -672,7 +693,7 @@ class _AdsPanel extends StatelessWidget {
 class _AdPreviewCard extends StatelessWidget {
   const _AdPreviewCard({required this.item});
 
-  final InfluencerAdPreviewItem item;
+  final CreatorAdPreviewItem item;
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
-import 'package:adzmavall/features/influencer_profile/data/profile_edit_repository.dart';
+import 'package:adzmavall/features/influencer_profile/data/creator_profile_repository.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/models/creator_profile_tab_data.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/models/influencer_profile_view_data.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_profile_panels.dart';
@@ -24,17 +25,14 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
 
   Future<_InfluencerProfilePageData> _load() async {
     if (!ApiUrlResolver.isConfigured) {
-      return const _InfluencerProfilePageData(
-        summary: InfluencerProfileViewData.summary,
-        rawProfile: <String, dynamic>{},
-        creatorType: 'influencer',
-      );
+      return _InfluencerProfilePageData.fallback();
     }
 
     try {
-      final Map<String, dynamic> json = await ProfileEditRepository(
+      final CreatorProfileBundle bundle = await CreatorProfileRepository(
         DioClient.instance,
-      ).fetchProfile();
+      ).fetchAll();
+      final Map<String, dynamic> json = bundle.profile;
       return _InfluencerProfilePageData(
         summary: _summaryFromJson(json, InfluencerProfileViewData.summary),
         rawProfile: json,
@@ -43,13 +41,10 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
           'creatorType',
           'type',
         ], 'influencer').toLowerCase(),
+        tabData: CreatorProfileTabData.fromBundle(bundle),
       );
     } on Object {
-      return const _InfluencerProfilePageData(
-        summary: InfluencerProfileViewData.summary,
-        rawProfile: <String, dynamic>{},
-        creatorType: 'influencer',
-      );
+      return _InfluencerProfilePageData.fallback();
     }
   }
 
@@ -67,12 +62,7 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
             AsyncSnapshot<_InfluencerProfilePageData> snapshot,
           ) {
             final _InfluencerProfilePageData data =
-                snapshot.data ??
-                const _InfluencerProfilePageData(
-                  summary: InfluencerProfileViewData.summary,
-                  rawProfile: <String, dynamic>{},
-                  creatorType: 'influencer',
-                );
+                snapshot.data ?? _InfluencerProfilePageData.fallback();
 
             return Directionality(
               textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -118,6 +108,7 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
                                   index: _selectedTab,
                                   rawProfile: data.rawProfile,
                                   creatorType: data.creatorType,
+                                  tabData: data.tabData,
                                 ),
                               ),
                             ),
@@ -152,11 +143,22 @@ class _InfluencerProfilePageData {
     required this.summary,
     required this.rawProfile,
     required this.creatorType,
+    required this.tabData,
   });
+
+  factory _InfluencerProfilePageData.fallback() {
+    return _InfluencerProfilePageData(
+      summary: InfluencerProfileViewData.summary,
+      rawProfile: const <String, dynamic>{},
+      creatorType: 'influencer',
+      tabData: CreatorProfileTabData.fallback(),
+    );
+  }
 
   final InfluencerProfileSummaryData summary;
   final Map<String, dynamic> rawProfile;
   final String creatorType;
+  final CreatorProfileTabData tabData;
 }
 
 InfluencerProfileSummaryData _summaryFromJson(

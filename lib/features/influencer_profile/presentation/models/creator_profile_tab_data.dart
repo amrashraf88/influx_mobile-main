@@ -1,0 +1,424 @@
+import 'package:adzmavall/core/network/api_media.dart';
+import 'package:adzmavall/features/influencer_profile/data/creator_profile_repository.dart';
+import 'package:adzmavall/features/influencer_profile/presentation/models/influencer_profile_view_data.dart';
+import 'package:adzmavall/utils/imageassets.dart';
+
+/// A single social account row in the "Accounts" tab.
+class CreatorAccountMetric {
+  const CreatorAccountMetric({
+    required this.label,
+    required this.asset,
+    required this.followers,
+  });
+
+  final String label;
+  final String asset;
+  final String followers;
+}
+
+/// A single client logo in the "Clients" tab.
+class CreatorClientItem {
+  const CreatorClientItem({required this.name, required this.logoUrl});
+
+  final String name;
+  final String logoUrl;
+}
+
+/// A single platform pricing card in the "Ad Price" tab.
+class CreatorAdPriceItem {
+  const CreatorAdPriceItem({
+    required this.label,
+    required this.asset,
+    required this.followers,
+    required this.coverage,
+    required this.videoPrice,
+  });
+
+  final String label;
+  final String asset;
+  final String followers;
+  final String coverage;
+  final String videoPrice;
+}
+
+/// A single ad preview in the "Ads" tab.
+class CreatorAdPreviewItem {
+  const CreatorAdPreviewItem({required this.title, required this.imageUrl});
+
+  final String title;
+  final String imageUrl;
+}
+
+/// Everything the profile tabs render, built from the live API bundle with a
+/// graceful fall back to [InfluencerProfileViewData] sample data per-section.
+class CreatorProfileTabData {
+  const CreatorProfileTabData({
+    required this.accounts,
+    required this.clients,
+    required this.clientCategories,
+    required this.adPriceItems,
+    required this.ads,
+    required this.keywords,
+    required this.ageRanges,
+    required this.platforms,
+  });
+
+  final List<CreatorAccountMetric> accounts;
+  final List<CreatorClientItem> clients;
+  final List<String> clientCategories;
+  final List<CreatorAdPriceItem> adPriceItems;
+  final List<CreatorAdPreviewItem> ads;
+  final List<String> keywords;
+  final List<String> ageRanges;
+  final List<String> platforms;
+
+  /// Sample data used before the API is configured or when it returns nothing.
+  factory CreatorProfileTabData.fallback() {
+    return CreatorProfileTabData(
+      accounts: InfluencerProfileViewData.accountMetrics
+          .map(
+            (InfluencerAccountMetric m) => CreatorAccountMetric(
+              label: m.label,
+              asset: m.asset,
+              followers: '399.6k',
+            ),
+          )
+          .toList(),
+      clients: InfluencerProfileViewData.clients
+          .map(
+            (InfluencerClientItem c) =>
+                CreatorClientItem(name: c.name, logoUrl: c.logoUrl),
+          )
+          .toList(),
+      clientCategories: InfluencerProfileViewData.clientCategories,
+      adPriceItems: InfluencerProfileViewData.adPriceItems
+          .map(
+            (InfluencerAdPriceItem p) => CreatorAdPriceItem(
+              label: p.label,
+              asset: p.asset ?? ImageAssets.instagramColoredIcon,
+              followers: '399.6k',
+              coverage: '17,600',
+              videoPrice: '3,500',
+            ),
+          )
+          .toList(),
+      ads: InfluencerProfileViewData.adPreviews
+          .map(
+            (InfluencerAdPreviewItem a) =>
+                CreatorAdPreviewItem(title: a.title, imageUrl: a.imageUrl),
+          )
+          .toList(),
+      keywords: InfluencerProfileViewData.keywords,
+      ageRanges: const <String>['18-25'],
+      platforms: const <String>['Tiktok', 'Instagram'],
+    );
+  }
+
+  /// Builds tab data from the API bundle, using [fallback] for empty sections.
+  factory CreatorProfileTabData.fromBundle(CreatorProfileBundle bundle) {
+    final CreatorProfileTabData fb = CreatorProfileTabData.fallback();
+
+    final List<CreatorAccountMetric> accounts = bundle.socialAccounts
+        .map(_accountFromJson)
+        .where((CreatorAccountMetric a) => a.label.isNotEmpty)
+        .toList();
+
+    final List<CreatorClientItem> clients = bundle.clients
+        .map(_clientFromJson)
+        .where((CreatorClientItem c) => c.name.isNotEmpty)
+        .toList();
+
+    final List<CreatorAdPriceItem> adPriceItems = bundle.socialAccounts
+        .map(_adPriceFromJson)
+        .where((CreatorAdPriceItem p) => p.label.isNotEmpty)
+        .toList();
+
+    final List<CreatorAdPreviewItem> ads = bundle.ads
+        .map(_adPreviewFromJson)
+        .where((CreatorAdPreviewItem a) => a.title.isNotEmpty)
+        .toList();
+
+    final List<String> keywords = _stringList(bundle.profile, <String>[
+      'keywords',
+      'tags',
+      'hashtags',
+      'interests',
+    ], prefixHash: true);
+
+    final List<String> platforms = accounts.isNotEmpty
+        ? accounts.map((CreatorAccountMetric a) => a.label).toSet().toList()
+        : _stringList(bundle.profile, <String>['platforms'], prefixHash: false);
+
+    final List<String> ageRanges = _stringList(bundle.profile, <String>[
+      'audience_age_ranges',
+      'audienceAgeRanges',
+      'age_ranges',
+      'ageRanges',
+    ], prefixHash: false);
+
+    final List<String> clientCategories = _stringList(
+      bundle.profile,
+      <String>['client_categories', 'clientCategories'],
+      prefixHash: false,
+    );
+
+    return CreatorProfileTabData(
+      accounts: accounts.isNotEmpty ? accounts : fb.accounts,
+      clients: clients.isNotEmpty ? clients : fb.clients,
+      clientCategories: clientCategories.isNotEmpty
+          ? clientCategories
+          : fb.clientCategories,
+      adPriceItems: adPriceItems.isNotEmpty ? adPriceItems : fb.adPriceItems,
+      ads: ads.isNotEmpty ? ads : fb.ads,
+      keywords: keywords.isNotEmpty ? keywords : fb.keywords,
+      ageRanges: ageRanges.isNotEmpty ? ageRanges : fb.ageRanges,
+      platforms: platforms.isNotEmpty ? platforms : fb.platforms,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Per-row mappers
+  // ---------------------------------------------------------------------------
+
+  static CreatorAccountMetric _accountFromJson(Map<String, dynamic> json) {
+    final String platform = _pick(json, <String>[
+      'platform',
+      'platform_name',
+      'platformName',
+      'social_platform',
+      'socialPlatform',
+      'name',
+      'type',
+    ]);
+    return CreatorAccountMetric(
+      label: _platformLabel(platform),
+      asset: _platformAsset(platform),
+      followers: _formatCount(
+        _pick(json, <String>[
+          'followers_count',
+          'followersCount',
+          'followers',
+          'audience_size',
+          'audienceSize',
+          'subscribers',
+        ]),
+      ),
+    );
+  }
+
+  static CreatorClientItem _clientFromJson(Map<String, dynamic> json) {
+    return CreatorClientItem(
+      name: _pick(json, <String>[
+        'name',
+        'client_name',
+        'clientName',
+        'title',
+        'company_name',
+        'companyName',
+      ]),
+      logoUrl: ApiMedia.resolve(
+        _pick(json, <String>[
+          'logo_url',
+          'logoUrl',
+          'logo',
+          'image_url',
+          'imageUrl',
+          'image',
+          'icon',
+        ]),
+      ),
+    );
+  }
+
+  static CreatorAdPriceItem _adPriceFromJson(Map<String, dynamic> json) {
+    final String platform = _pick(json, <String>[
+      'platform',
+      'platform_name',
+      'platformName',
+      'social_platform',
+      'socialPlatform',
+      'name',
+      'type',
+    ]);
+    return CreatorAdPriceItem(
+      label: _platformLabel(platform),
+      asset: _platformAsset(platform),
+      followers: _formatCount(
+        _pick(json, <String>[
+          'followers_count',
+          'followersCount',
+          'followers',
+          'audience_size',
+        ]),
+      ),
+      coverage: _formatPrice(
+        _pick(json, <String>[
+          'coverage_price',
+          'coveragePrice',
+          'story_price',
+          'storyPrice',
+          'coverage',
+        ]),
+        '17,600',
+      ),
+      videoPrice: _formatPrice(
+        _pick(json, <String>[
+          'video_price',
+          'videoPrice',
+          'post_price',
+          'postPrice',
+          'price',
+        ]),
+        '3,500',
+      ),
+    );
+  }
+
+  static CreatorAdPreviewItem _adPreviewFromJson(Map<String, dynamic> json) {
+    return CreatorAdPreviewItem(
+      title: _pick(json, <String>[
+        'title',
+        'name',
+        'ad_name',
+        'adName',
+        'client_name',
+        'clientName',
+      ]),
+      imageUrl: ApiMedia.resolve(
+        _pick(json, <String>[
+          'image_url',
+          'imageUrl',
+          'thumbnail_url',
+          'thumbnailUrl',
+          'thumbnail',
+          'cover_url',
+          'coverUrl',
+          'cover',
+          'media_url',
+          'mediaUrl',
+          'image',
+        ]),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  static String _pick(Map<String, dynamic> json, List<String> keys) {
+    for (final String key in keys) {
+      final Object? value = json[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+    return '';
+  }
+
+  static List<String> _stringList(
+    Map<String, dynamic> json,
+    List<String> keys, {
+    required bool prefixHash,
+  }) {
+    final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+    for (final String objectKey in <String>[
+      'profile',
+      'content_creator',
+      'contentCreator',
+      'creator',
+    ]) {
+      final Object? value = json[objectKey];
+      if (value is Map) maps.add(Map<String, dynamic>.from(value));
+    }
+    for (final Map<String, dynamic> map in maps) {
+      for (final String key in keys) {
+        final Object? value = map[key];
+        if (value is List && value.isNotEmpty) {
+          return value
+              .map((Object? e) => _normalizeTag(e, prefixHash: prefixHash))
+              .where((String s) => s.isNotEmpty)
+              .toList();
+        }
+        if (value is String && value.trim().isNotEmpty) {
+          return value
+              .split(RegExp(r'[,\n]'))
+              .map((String e) => _normalizeTag(e, prefixHash: prefixHash))
+              .where((String s) => s.isNotEmpty)
+              .toList();
+        }
+      }
+    }
+    return const <String>[];
+  }
+
+  static String _normalizeTag(Object? raw, {required bool prefixHash}) {
+    String s = raw?.toString().trim() ?? '';
+    if (s.isEmpty) return '';
+    if (prefixHash && !s.startsWith('#')) {
+      s = '#${s.replaceFirst(RegExp(r'^#+'), '')}';
+    }
+    return s;
+  }
+
+  static String _platformLabel(String platform) {
+    final String key = platform.trim().toLowerCase();
+    if (key.isEmpty) return '';
+    return switch (key) {
+      'instagram' || 'insta' || 'ig' => 'Instagram',
+      'telegram' || 'tg' => 'Telegram',
+      'twitter' || 'x' => 'Twitter',
+      'threads' => 'Threads',
+      'whatsapp' || 'whats_app' => 'WhatsApp',
+      'youtube' || 'yt' => 'Youtube',
+      'snapchat' || 'snap' => 'Snap',
+      'tiktok' || 'tik_tok' || 'tik tok' => 'Tik Tok',
+      'facebook' || 'fb' => 'Facebook',
+      _ => platform.trim(),
+    };
+  }
+
+  static String _platformAsset(String platform) {
+    final String key = platform.trim().toLowerCase();
+    return switch (key) {
+      'instagram' || 'insta' || 'ig' => ImageAssets.instagramColoredIcon,
+      'telegram' || 'tg' => ImageAssets.telegramColoredIcon,
+      'twitter' || 'x' => ImageAssets.twitterIcon,
+      'threads' => ImageAssets.threadsIcon,
+      'whatsapp' || 'whats_app' => ImageAssets.whatsappColoredIcon,
+      'youtube' || 'yt' => ImageAssets.homeInfluencerYoutube,
+      'snapchat' || 'snap' => ImageAssets.snapchatIcon,
+      'tiktok' || 'tik_tok' || 'tik tok' => ImageAssets.homeInfluencerTiktok,
+      'facebook' || 'fb' => ImageAssets.homeInfluencerFacebook,
+      _ => ImageAssets.instagramColoredIcon,
+    };
+  }
+
+  /// Formats a raw follower count (e.g. `399600`) into `399.6k`.
+  static String _formatCount(String raw) {
+    if (raw.isEmpty) return '';
+    final num? n = num.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
+    if (n == null) return raw;
+    if (n >= 1000000) {
+      return '${(n / 1000000).toStringAsFixed(1)}M';
+    }
+    if (n >= 1000) {
+      return '${(n / 1000).toStringAsFixed(1)}k';
+    }
+    return n.toString();
+  }
+
+  /// Formats a raw price with thousands separators, or returns [fallback].
+  static String _formatPrice(String raw, String fallback) {
+    if (raw.isEmpty) return fallback;
+    final num? n = num.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
+    if (n == null) return raw;
+    final String fixed = n == n.roundToDouble()
+        ? n.toInt().toString()
+        : n.toString();
+    return fixed.replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+  }
+}
