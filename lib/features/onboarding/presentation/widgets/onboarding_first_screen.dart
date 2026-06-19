@@ -28,7 +28,7 @@ class OnboardingFirstScreen extends StatelessWidget {
           builder: (BuildContext context, BoxConstraints constraints) {
             final double h = constraints.maxHeight;
             final double w = constraints.maxWidth;
-            final double panelHeight = h * 0.46;
+            final double panelHeight = h * 0.47;
 
             return Stack(
               children: <Widget>[
@@ -97,6 +97,27 @@ class _WelcomePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final TextDirection dir = Directionality.of(context);
+
+    final String brand = AppStrings.of(locale, 'onboarding_brand_primary');
+    final String suffix = AppStrings.of(locale, 'onboarding_brand_suffix');
+    final TextStyle brandStyle = TextStyle(
+      color: accentBlue,
+      fontSize: 30.sp,
+      fontWeight: FontWeight.w700,
+    );
+    final TextStyle suffixStyle = TextStyle(
+      color: AppColors.white,
+      fontSize: 30.sp,
+      fontWeight: FontWeight.w800,
+    );
+
+    // Measure the brand text so the underline matches its width exactly.
+    final TextPainter brandPainter = TextPainter(
+      text: TextSpan(text: brand, style: brandStyle),
+      textDirection: dir,
+    )..layout();
+    final double brandWidth = brandPainter.width;
 
     return CustomPaint(
       painter: _PanelBackgroundPainter(
@@ -104,7 +125,7 @@ class _WelcomePanel extends StatelessWidget {
         arcColor: accentBlue,
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(28.w, 64.h, 28.w, 20.h + bottomInset),
+        padding: EdgeInsets.fromLTRB(24.w, 42.h, 24.w, 16.h + bottomInset),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
@@ -113,56 +134,42 @@ class _WelcomePanel extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.white,
-                fontSize: 34.sp,
+                fontSize: 30.sp,
                 fontWeight: FontWeight.w800,
               ),
             ),
             SizedBox(height: 6.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                IntrinsicWidth(
-                  child: Column(
+            // Scales down to one line on narrow screens; underline only under
+            // the brand word, not the " App" suffix.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Text(
-                        AppStrings.of(locale, 'onboarding_brand_primary'),
-                        style: TextStyle(
-                          color: accentBlue,
-                          fontSize: 34.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      Text(brand, maxLines: 1, style: brandStyle),
                       SizedBox(height: 4.h),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 9.h,
-                        child: CustomPaint(
-                          painter: _SquigglePainter(color: accentBlue),
-                        ),
+                      CustomPaint(
+                        size: Size(brandWidth, 9.h),
+                        painter: _SquigglePainter(color: accentBlue),
                       ),
                     ],
                   ),
-                ),
-                Text(
-                  AppStrings.of(locale, 'onboarding_brand_suffix'),
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 34.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+                  Text(suffix, maxLines: 1, style: suffixStyle),
+                ],
+              ),
             ),
-            SizedBox(height: 18.h),
+            SizedBox(height: 16.h),
             Text(
               AppStrings.of(locale, 'onboarding_first_lorem'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.lightText,
-                fontSize: 15.sp,
-                height: 1.5,
+                fontSize: 14.sp,
+                height: 1.45,
                 fontWeight: FontWeight.w400,
               ),
             ),
