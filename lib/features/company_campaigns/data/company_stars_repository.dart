@@ -51,6 +51,46 @@ class CompanyStarsRepository {
     return stars;
   }
 
+  /// Loads a single page of the stars directory for infinite scrolling.
+  ///
+  /// [perPage] defaults to 10; pass an optional [type] (e.g. `model`, `ugc`)
+  /// to scope the page to one creator type, or leave it null for all types.
+  Future<CompanyStarsPageResult> fetchStarsPage({
+    required int page,
+    int perPage = 10,
+    String? type,
+    String? search,
+  }) async {
+    final String url = ApiUrlResolver.resolve(
+      ApiEndpoints.brandContentCreatorsPath,
+    );
+    final Map<String, dynamic> query = <String, dynamic>{
+      'page': page,
+      'per_page': perPage,
+      if (type != null && type.trim().isNotEmpty) 'type': type.trim(),
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+    };
+
+    final Response<dynamic> res = await _dio.get<dynamic>(
+      url,
+      queryParameters: query,
+    );
+    final _StarsPage pageResult = _StarsPage.fromResponse(res.data);
+
+    // Trust pagination metadata when present; otherwise assume there is more
+    // while the server keeps returning a full page.
+    final bool hasMore =
+        pageResult.nextUrl != null ||
+        pageResult.nextPage != null ||
+        pageResult.items.length >= perPage;
+
+    return CompanyStarsPageResult(
+      items: pageResult.items,
+      hasMore: hasMore,
+      page: page,
+    );
+  }
+
   /// Fetches one creator's profile via `GET /brand/content-creators/{id}`.
   /// Missing fields keep the [CompanyStarsViewData.profileFor] values.
   Future<CompanyStarProfile> fetchStarProfile(String id) async {
@@ -432,6 +472,19 @@ class CompanyStarsRepository {
     }
     return const <dynamic>[];
   }
+}
+
+/// One page of the stars directory plus whether more pages remain.
+class CompanyStarsPageResult {
+  const CompanyStarsPageResult({
+    required this.items,
+    required this.hasMore,
+    required this.page,
+  });
+
+  final List<CompanyStarListItem> items;
+  final bool hasMore;
+  final int page;
 }
 
 class _StarsPage {

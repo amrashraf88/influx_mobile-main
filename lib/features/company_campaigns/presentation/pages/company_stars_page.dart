@@ -24,13 +24,22 @@ class CompanyStarsPage extends StatefulWidget {
 }
 
 class _CompanyStarsPageState extends State<CompanyStarsPage> {
+  static const int _perPage = 10;
+
   bool _secondaryTabOn = false;
   bool _showSelectedOnly = false;
   CompanyStarCategory _category = CompanyStarCategory.all;
   final TextEditingController _search = TextEditingController();
   final CompanyStarsFilterDraft _filter = CompanyStarsFilterDraft();
   final Set<String> _selectedIds = <String>{};
+  final ScrollController _scrollController = ScrollController();
+  final Set<String> _seenKeys = <String>{};
   late List<CompanyStarListItem> _stars;
+
+  int _page = 0;
+  bool _hasMore = true;
+  bool _loadingMore = false;
+  bool _initialLoading = false;
 
   @override
   void initState() {
@@ -39,28 +48,109 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
     if (widget.selectionMode) {
       _secondaryTabOn = false;
     }
-    _loadStars();
+    _scrollController.addListener(_onScroll);
+    _loadPage(reset: true);
   }
 
-  Future<void> _loadStars() async {
+  CompanyStarsRepository get _repo => CompanyStarsRepository(DioClient.instance);
+
+  /// Server-side type filter for the active category (null = all types).
+  String? get _typeParam => switch (_category) {
+    CompanyStarCategory.all => null,
+    CompanyStarCategory.influencer => 'influencer',
+    CompanyStarCategory.model => 'model',
+    CompanyStarCategory.ugc => 'ugc',
+    CompanyStarCategory.collage => 'collage',
+  };
+
+  /// Loads the next page (or page 1 when [reset]), appending de-duplicated rows.
+  Future<void> _loadPage({bool reset = false}) async {
     if (!ApiUrlResolver.isConfigured) {
       return;
     }
+    if (_loadingMore) {
+      return;
+    }
+    if (!reset && !_hasMore) {
+      return;
+    }
+
+    final int pageToLoad = reset ? 1 : _page + 1;
+    setState(() {
+      _loadingMore = true;
+      if (reset) {
+        _initialLoading = true;
+      }
+    });
+
     try {
-      final List<CompanyStarListItem> list = await CompanyStarsRepository(
-        DioClient.instance,
-      ).fetchStars();
-      if (!mounted || list.isEmpty) {
+      final CompanyStarsPageResult result = await _repo.fetchStarsPage(
+        page: pageToLoad,
+        perPage: _perPage,
+        type: _typeParam,
+      );
+      if (!mounted) {
         return;
       }
-      setState(() => _stars = list);
+      setState(() {
+        if (reset) {
+          _stars = <CompanyStarListItem>[];
+          _seenKeys.clear();
+        }
+        int added = 0;
+        for (final CompanyStarListItem star in result.items) {
+          final String key = star.id.isNotEmpty
+              ? star.id
+              : '${star.name}-${star.coverImageUrl}';
+          if (_seenKeys.add(key)) {
+            _stars.add(star);
+            added += 1;
+          }
+        }
+        _page = result.page;
+        _hasMore = result.hasMore && added > 0;
+        _loadingMore = false;
+        _initialLoading = false;
+      });
     } on Object {
-      // Keep the view-data fallback already in _stars.
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loadingMore = false;
+        _initialLoading = false;
+        if (reset && _stars.isEmpty) {
+          // Network/API failure on first page: show sample data instead.
+          _stars = List<CompanyStarListItem>.from(CompanyStarsViewData.stars);
+          _hasMore = false;
+        }
+      });
+    }
+  }
+
+  void _onScroll() {
+    if (!_hasMore || _loadingMore) {
+      return;
+    }
+    final ScrollPosition position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 320) {
+      _loadPage();
+    }
+  }
+
+  void _onCategorySelected(CompanyStarCategory category) {
+    if (_category == category) {
+      return;
+    }
+    setState(() => _category = category);
+    if (ApiUrlResolver.isConfigured) {
+      _loadPage(reset: true);
     }
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _search.dispose();
     super.dispose();
   }
@@ -193,38 +283,34 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
                       ),
                       selected: _category == CompanyStarCategory.all,
                       icon: Icons.grid_view_rounded,
-                      onTap: () =>
-                          setState(() => _category = CompanyStarCategory.all),
+                      onTap: () => _onCategorySelected(CompanyStarCategory.all),
                     ),
                     _CategoryChip(
                       label: 'Influencer',
                       selected: _category == CompanyStarCategory.influencer,
                       icon: Icons.campaign_outlined,
-                      onTap: () => setState(
-                        () => _category = CompanyStarCategory.influencer,
-                      ),
+                      onTap: () =>
+                          _onCategorySelected(CompanyStarCategory.influencer),
                     ),
                     _CategoryChip(
                       label: 'Model',
                       selected: _category == CompanyStarCategory.model,
                       icon: Icons.person_outline_rounded,
                       onTap: () =>
-                          setState(() => _category = CompanyStarCategory.model),
+                          _onCategorySelected(CompanyStarCategory.model),
                     ),
                     _CategoryChip(
                       label: 'UGC',
                       selected: _category == CompanyStarCategory.ugc,
                       icon: Icons.video_camera_front_outlined,
-                      onTap: () =>
-                          setState(() => _category = CompanyStarCategory.ugc),
+                      onTap: () => _onCategorySelected(CompanyStarCategory.ugc),
                     ),
                     _CategoryChip(
                       label: 'Collage',
                       selected: _category == CompanyStarCategory.collage,
                       icon: Icons.school_outlined,
-                      onTap: () => setState(
-                        () => _category = CompanyStarCategory.collage,
-                      ),
+                      onTap: () =>
+                          _onCategorySelected(CompanyStarCategory.collage),
                     ),
                   ],
                 ),
@@ -243,52 +329,80 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
             ] else
               SizedBox(height: 12.h),
             Expanded(
-              child: widget.selectionMode
-                  ? GridView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                        16.w,
-                        0,
-                        16.w,
-                        showNext ? 88.h : 16.h,
-                      ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12.h,
-                        crossAxisSpacing: 12.w,
-                        childAspectRatio:
-                            CompanyStarGridCardLayout.gridAspectRatio(),
-                      ),
-                      itemCount: _visible.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        final CompanyStarListItem star = _visible[index];
-                        final bool selected = _selectedIds.contains(star.id);
-                        return FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.topCenter,
-                          child: CompanyStarGridCard(
-                            star: star,
-                            selectionMode: true,
-                            isSelected: selected,
-                            onSelectToggle: () => _toggleSelected(star.id),
-                            onFavoriteToggle: () => _toggleFavorite(star.id),
+              child: (_initialLoading && _stars.isEmpty)
+                  ? const Center(child: CircularProgressIndicator())
+                  : Stack(
+                      children: <Widget>[
+                        if (widget.selectionMode)
+                          GridView.builder(
+                            controller: _scrollController,
+                            padding: EdgeInsets.fromLTRB(
+                              16.w,
+                              0,
+                              16.w,
+                              showNext ? 88.h : 24.h,
+                            ),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12.h,
+                                  crossAxisSpacing: 12.w,
+                                  childAspectRatio:
+                                      CompanyStarGridCardLayout.gridAspectRatio(),
+                                ),
+                            itemCount: _visible.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final CompanyStarListItem star = _visible[index];
+                              final bool selected = _selectedIds.contains(
+                                star.id,
+                              );
+                              return FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.topCenter,
+                                child: CompanyStarGridCard(
+                                  star: star,
+                                  selectionMode: true,
+                                  isSelected: selected,
+                                  onSelectToggle: () => _toggleSelected(star.id),
+                                  onFavoriteToggle: () =>
+                                      _toggleFavorite(star.id),
+                                ),
+                              );
+                            },
+                          )
+                        else
+                          ListView.separated(
+                            controller: _scrollController,
+                            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 28.h),
+                            itemCount: _visible.length,
+                            separatorBuilder: (_, _) => SizedBox(height: 12.h),
+                            itemBuilder: (BuildContext context, int index) {
+                              final CompanyStarListItem star = _visible[index];
+                              return CompanyStarListCard(
+                                star: star,
+                                onFavoriteToggle: () => _toggleFavorite(star.id),
+                                onCardTap: () => context.push(
+                                  RouteNames.companyStarProfilePath(star.id),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 18.h),
-                      itemCount: _visible.length,
-                      separatorBuilder: (_, _) => SizedBox(height: 12.h),
-                      itemBuilder: (BuildContext context, int index) {
-                        final CompanyStarListItem star = _visible[index];
-                        return CompanyStarListCard(
-                          star: star,
-                          onFavoriteToggle: () => _toggleFavorite(star.id),
-                          onCardTap: () => context.push(
-                            RouteNames.companyStarProfilePath(star.id),
+                        if (_loadingMore && _stars.isNotEmpty)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 10.h,
+                            child: Center(
+                              child: SizedBox(
+                                width: 26.w,
+                                height: 26.w,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                ),
+                              ),
+                            ),
                           ),
-                        );
-                      },
+                      ],
                     ),
             ),
           ],
