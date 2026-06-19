@@ -224,12 +224,17 @@ class CreatorProfileTabData {
 
   static CreatorAccountMetric _accountFromJson(Map<String, dynamic> json) {
     final String platform = _extractPlatform(json);
+    final String platformKey = _platformFollowerKey(platform);
     return CreatorAccountMetric(
       id: _pickId(json),
       label: _platformLabel(platform),
       asset: _platformAsset(platform),
       followers: _formatCount(
         _pick(json, <String>[
+          if (platformKey.isNotEmpty) '${platformKey}_followers',
+          if (platformKey.isNotEmpty) '${platformKey}Followers',
+          if (platformKey.isNotEmpty) '${platformKey}_followers_count',
+          if (platformKey.isNotEmpty) '${platformKey}FollowersCount',
           'statistics.followers_count',
           'statistics.followers',
           'stats.followers_count',
@@ -246,6 +251,8 @@ class CreatorProfileTabData {
           'followerCount',
           'followers_count_formatted',
           'followersCountFormatted',
+          'followers_label',
+          'followersLabel',
           'followers_number',
           'followersNumber',
           'number_of_followers',
@@ -255,6 +262,10 @@ class CreatorProfileTabData {
           'followers',
           'audience_size',
           'audienceSize',
+          'audience',
+          'count',
+          'total',
+          'value',
           'subscribers',
           'subscribers_count',
           'subscribersCount',
@@ -298,6 +309,7 @@ class CreatorProfileTabData {
 
   static CreatorAdPriceItem _adPriceFromJson(Map<String, dynamic> json) {
     final String platform = _extractPlatform(json);
+    final String platformKey = _platformFollowerKey(platform);
     final String platformValue = _pick(json, <String>[
       'platform_id',
       'platformId',
@@ -319,6 +331,10 @@ class CreatorProfileTabData {
       asset: _platformAsset(platform),
       followers: _formatCount(
         _pick(json, <String>[
+          if (platformKey.isNotEmpty) '${platformKey}_followers',
+          if (platformKey.isNotEmpty) '${platformKey}Followers',
+          if (platformKey.isNotEmpty) '${platformKey}_followers_count',
+          if (platformKey.isNotEmpty) '${platformKey}FollowersCount',
           'statistics.followers_count',
           'statistics.followers',
           'stats.followers_count',
@@ -335,6 +351,8 @@ class CreatorProfileTabData {
           'followerCount',
           'followers_count_formatted',
           'followersCountFormatted',
+          'followers_label',
+          'followersLabel',
           'followers_number',
           'followersNumber',
           'number_of_followers',
@@ -344,6 +362,10 @@ class CreatorProfileTabData {
           'followers',
           'audience_size',
           'audienceSize',
+          'audience',
+          'count',
+          'total',
+          'value',
           'subscribers',
           'subscribers_count',
           'subscribersCount',
@@ -648,10 +670,33 @@ class CreatorProfileTabData {
     };
   }
 
+  static String _platformFollowerKey(String platform) {
+    final String key = platform.trim().toLowerCase();
+    return switch (key) {
+      'instagram' || 'insta' || 'ig' => 'instagram',
+      'telegram' || 'tg' => 'telegram',
+      'twitter' || 'x' => 'twitter',
+      'threads' => 'threads',
+      'whatsapp' || 'whats_app' => 'whatsapp',
+      'youtube' || 'yt' => 'youtube',
+      'snapchat' || 'snap' => 'snapchat',
+      'tiktok' || 'tik_tok' || 'tik tok' => 'tiktok',
+      'facebook' || 'fb' => 'facebook',
+      _ => key.replaceAll(RegExp(r'[^a-z0-9]+'), '_'),
+    };
+  }
+
   /// Formats a raw follower count (e.g. `399600`) into `399.6k`.
   static String _formatCount(String raw) {
     final String value = raw.trim();
     if (value.isEmpty) return '';
+    final RegExp compactInsideText = RegExp(r'(\d+(?:[.,]\d+)?)\s*([kKmMbB])');
+    final Match? compactMatch = compactInsideText.firstMatch(value);
+    if (compactMatch != null) {
+      final String number = compactMatch.group(1)!.replaceAll(',', '.');
+      final String suffix = compactMatch.group(2)!.toLowerCase();
+      return '$number$suffix';
+    }
     if (RegExp(r'^\d+([.,]\d+)?\s*[kKmMbB]$').hasMatch(value)) {
       final String compact = value.replaceAll(' ', '').replaceAll(',', '.');
       final String suffix = compact.substring(compact.length - 1).toLowerCase();
