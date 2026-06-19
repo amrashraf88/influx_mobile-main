@@ -224,12 +224,36 @@ class CreatorProfileTabData {
       asset: _platformAsset(platform),
       followers: _formatCount(
         _pick(json, <String>[
+          'statistics.followers_count',
+          'statistics.followers',
+          'stats.followers_count',
+          'stats.followers',
+          'metrics.followers_count',
+          'metrics.followers',
+          'account.followers_count',
+          'account.followers',
+          'social_account.followers_count',
+          'social_account.followers',
           'followers_count',
+          'follower_count',
           'followersCount',
+          'followerCount',
+          'followers_count_formatted',
+          'followersCountFormatted',
+          'followers_number',
+          'followersNumber',
+          'number_of_followers',
+          'numberOfFollowers',
+          'total_followers',
+          'totalFollowers',
           'followers',
           'audience_size',
           'audienceSize',
           'subscribers',
+          'subscribers_count',
+          'subscribersCount',
+          'fans_count',
+          'fansCount',
         ]),
       ),
     );
@@ -274,10 +298,36 @@ class CreatorProfileTabData {
       asset: _platformAsset(platform),
       followers: _formatCount(
         _pick(json, <String>[
+          'statistics.followers_count',
+          'statistics.followers',
+          'stats.followers_count',
+          'stats.followers',
+          'metrics.followers_count',
+          'metrics.followers',
+          'account.followers_count',
+          'account.followers',
+          'social_account.followers_count',
+          'social_account.followers',
           'followers_count',
+          'follower_count',
           'followersCount',
+          'followerCount',
+          'followers_count_formatted',
+          'followersCountFormatted',
+          'followers_number',
+          'followersNumber',
+          'number_of_followers',
+          'numberOfFollowers',
+          'total_followers',
+          'totalFollowers',
           'followers',
           'audience_size',
+          'audienceSize',
+          'subscribers',
+          'subscribers_count',
+          'subscribersCount',
+          'fans_count',
+          'fansCount',
         ]),
       ),
       coverage: _formatPrice(
@@ -361,11 +411,55 @@ class CreatorProfileTabData {
       return value?.toString().trim() ?? '';
     }
 
-    for (final String key in keys) {
-      final Object? value = json[key];
-      final String text = stringify(value);
-      if (text.isNotEmpty) {
-        return text;
+    Object? valueAtPath(Map<String, dynamic> map, String path) {
+      Object? current = map;
+      for (final String segment in path.split('.')) {
+        if (current is! Map) {
+          return null;
+        }
+        current = current[segment];
+      }
+      return current;
+    }
+
+    final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
+    final Set<Map<dynamic, dynamic>> seen = <Map<dynamic, dynamic>>{};
+    void addKnownNested(Map<String, dynamic> source) {
+      if (!seen.add(source)) {
+        return;
+      }
+      for (final String objectKey in <String>[
+        'data',
+        'account',
+        'social_account',
+        'socialAccount',
+        'platform',
+        'social_platform',
+        'socialPlatform',
+        'statistics',
+        'stats',
+        'metrics',
+        'meta',
+      ]) {
+        final Object? value = source[objectKey];
+        if (value is Map) {
+          final Map<String, dynamic> nested = Map<String, dynamic>.from(value);
+          maps.add(nested);
+          addKnownNested(nested);
+        }
+      }
+    }
+
+    addKnownNested(json);
+    for (final Map<String, dynamic> map in maps) {
+      for (final String key in keys) {
+        final Object? value = key.contains('.')
+            ? valueAtPath(map, key)
+            : map[key];
+        final String text = stringify(value);
+        if (text.isNotEmpty && text != 'null') {
+          return text;
+        }
       }
     }
     return '';
@@ -411,6 +505,31 @@ class CreatorProfileTabData {
       }
       final String s = v.toString().trim();
       if (s.isNotEmpty) return s;
+    }
+    final String nested = _pick(json, <String>[
+      'account.platform',
+      'account.platform_name',
+      'account.platformName',
+      'account.name',
+      'social_account.platform',
+      'social_account.platform_name',
+      'social_account.platformName',
+      'social_account.name',
+      'socialAccount.platform',
+      'socialAccount.platformName',
+      'socialAccount.name',
+      'platform.slug',
+      'platform.name',
+      'platform.label',
+      'social_platform.slug',
+      'social_platform.name',
+      'social_platform.label',
+      'socialPlatform.slug',
+      'socialPlatform.name',
+      'socialPlatform.label',
+    ]);
+    if (nested.isNotEmpty) {
+      return nested;
     }
     return '';
   }
@@ -495,8 +614,14 @@ class CreatorProfileTabData {
 
   /// Formats a raw follower count (e.g. `399600`) into `399.6k`.
   static String _formatCount(String raw) {
-    if (raw.isEmpty) return '';
-    final num? n = num.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
+    final String value = raw.trim();
+    if (value.isEmpty) return '';
+    if (RegExp(r'^\d+([.,]\d+)?\s*[kKmMbB]$').hasMatch(value)) {
+      final String compact = value.replaceAll(' ', '').replaceAll(',', '.');
+      final String suffix = compact.substring(compact.length - 1).toLowerCase();
+      return '${compact.substring(0, compact.length - 1)}$suffix';
+    }
+    final num? n = num.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), ''));
     if (n == null) return raw;
     if (n >= 1000000) {
       return '${(n / 1000000).toStringAsFixed(1)}M';
