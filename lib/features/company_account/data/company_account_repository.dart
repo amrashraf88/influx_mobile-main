@@ -20,10 +20,31 @@ class CompanyAccountRepository {
     final Map<String, dynamic> json = _extractMap(res.data);
 
     String pick(List<String> keys) {
+      String stringify(Object? value) {
+        if (value is Map) {
+          final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+          for (final String nestedKey in <String>[
+            'label',
+            'name',
+            'title',
+            'value',
+            'slug',
+            'key',
+          ]) {
+            final Object? nested = map[nestedKey];
+            if (nested != null && nested.toString().trim().isNotEmpty) {
+              return nested.toString().trim();
+            }
+          }
+        }
+        return value?.toString().trim() ?? '';
+      }
+
       for (final String k in keys) {
         final Object? v = json[k];
-        if (v != null && v.toString().trim().isNotEmpty) {
-          return v.toString();
+        final String text = stringify(v);
+        if (text.isNotEmpty) {
+          return text;
         }
       }
       return '';
@@ -40,6 +61,8 @@ class CompanyAccountRepository {
     final String avatar = pick(<String>[
       'logo_url',
       'logo',
+      'profile_image_url',
+      'profileImageUrl',
       'image_url',
       'avatar_url',
       'image',

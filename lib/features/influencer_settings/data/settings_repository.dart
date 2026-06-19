@@ -2,7 +2,8 @@ import 'package:adzmavall/core/config/api_endpoints.dart';
 import 'package:adzmavall/core/network/api_error_parser.dart';
 import 'package:adzmavall/core/network/api_media.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
-import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:adzmavall/features/influencer_settings/presentation/models/influencer_settings_models.dart';
 import 'package:dio/dio.dart';
 
@@ -79,6 +80,25 @@ class SettingsRepository {
       for (final Map<String, dynamic> map in maps) {
         for (final String key in keys) {
           final Object? value = map[key];
+          if (value is Map) {
+            final Map<String, dynamic> nested = Map<String, dynamic>.from(
+              value,
+            );
+            for (final String nestedKey in <String>[
+              'label',
+              'name',
+              'title',
+              'value',
+              'slug',
+              'key',
+            ]) {
+              final Object? nestedValue = nested[nestedKey];
+              if (nestedValue != null &&
+                  nestedValue.toString().trim().isNotEmpty) {
+                return nestedValue.toString().trim();
+              }
+            }
+          }
           if (value != null && value.toString().trim().isNotEmpty) {
             return value.toString().trim();
           }
@@ -125,6 +145,7 @@ class SettingsRepository {
           'avatarUrl',
           'profile_image_url',
           'profileImageUrl',
+          'profile_picture_url',
           'image_url',
           'imageUrl',
           'photo',

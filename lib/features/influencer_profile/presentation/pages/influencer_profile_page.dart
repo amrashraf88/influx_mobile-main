@@ -2,7 +2,8 @@ import 'package:adzmavall/core/lookup/lookup_item.dart';
 import 'package:adzmavall/core/lookup/lookup_repository.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
-import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:adzmavall/features/influencer_profile/data/creator_profile_repository.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/models/creator_profile_tab_data.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/models/influencer_profile_view_data.dart';
@@ -272,12 +273,14 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     }
 
     final Map<String, dynamic> body = <String, dynamic>{
-      if (companyId != null) 'company_id': companyId,
       'number_of_times': int.tryParse(r['number_of_times'] ?? '') ?? 0,
       'have_contract': r['have_contract'] == 'Yes',
       'public_status': r['public_status'] == 'Yes',
       'privacy': r['privacy'] ?? 'public',
     };
+    if (companyId != null) {
+      body['company_id'] = companyId;
+    }
     await _runWrite(() => _repo.createClient(body));
   }
 
@@ -287,11 +290,7 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       title: 'Add ad',
       fields: const <CreatorFormField>[
         CreatorFormField(key: 'label', label: 'Title / label'),
-        CreatorFormField(
-          key: 'url',
-          label: 'Link (URL)',
-          hint: 'https://',
-        ),
+        CreatorFormField(key: 'url', label: 'Link (URL)', hint: 'https://'),
       ],
     );
     if (r == null) return;
@@ -377,7 +376,10 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     final int? coverage = int.tryParse(r['coverage_price'] ?? '');
     final int? video = int.tryParse(r['video_price'] ?? '');
     if (coverage != null) {
-      prices.add(<String, dynamic>{'content_type': 'coverage', 'price': coverage});
+      prices.add(<String, dynamic>{
+        'content_type': 'coverage',
+        'price': coverage,
+      });
     }
     if (video != null) {
       prices.add(<String, dynamic>{'content_type': 'video', 'price': video});
@@ -456,10 +458,7 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     put('city', val(<String>['city']));
     put('city_direction', val(<String>['city_direction', 'cityDirection']));
     put('gender', val(<String>['gender'])?.toLowerCase());
-    put(
-      'phone_number',
-      val(<String>['phone_number', 'phoneNumber', 'phone']),
-    );
+    put('phone_number', val(<String>['phone_number', 'phoneNumber', 'phone']));
     final String? age = val(<String>['age']);
     if (age != null) {
       final int? a = int.tryParse(age);
@@ -840,6 +839,26 @@ InfluencerProfileSummaryData _summaryFromJson(
 }
 
 String _pick(Map<String, dynamic> json, List<String> keys, String fallback) {
+  String stringify(Object? value) {
+    if (value is Map) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+      for (final String key in <String>[
+        'label',
+        'name',
+        'title',
+        'value',
+        'slug',
+        'key',
+      ]) {
+        final Object? nested = map[key];
+        if (nested != null && nested.toString().trim().isNotEmpty) {
+          return nested.toString().trim();
+        }
+      }
+    }
+    return value?.toString().trim() ?? '';
+  }
+
   final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
   for (final String objectKey in <String>[
     'user',
@@ -856,8 +875,9 @@ String _pick(Map<String, dynamic> json, List<String> keys, String fallback) {
   for (final Map<String, dynamic> map in maps) {
     for (final String key in keys) {
       final Object? value = map[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString();
+      final String text = stringify(value);
+      if (text.isNotEmpty) {
+        return text;
       }
     }
   }

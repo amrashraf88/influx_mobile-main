@@ -104,19 +104,17 @@ abstract final class ContentCreatorRegistrationMapper {
     return accounts
         .where(
           (InfluencerSocialAccountEntry account) =>
-              account.platform.trim().isNotEmpty &&
+              account.platform.trim().isNotEmpty ||
               account.handle.trim().isNotEmpty,
         )
         .map((InfluencerSocialAccountEntry account) {
           return <String, dynamic>{
             'platform': account.platform.trim(),
-            'url': _socialUrl(account.platform, account.handle),
+            if (account.handle.trim().isNotEmpty)
+              'username': account.handle.trim(),
+            'profile_url': _socialUrl(account.platform, account.handle),
             'prices': _mapSocialPrices(account),
           };
-        })
-        .where((Map<String, dynamic> account) {
-          final List<dynamic> prices = account['prices'] as List<dynamic>;
-          return prices.isNotEmpty;
         })
         .toList();
   }
@@ -194,5 +192,4 @@ abstract final class ContentCreatorRegistrationMapper {
     }
     return _slug(value);
   }
-
 }

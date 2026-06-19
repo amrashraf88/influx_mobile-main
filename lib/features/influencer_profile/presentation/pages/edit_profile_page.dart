@@ -1,7 +1,8 @@
 import 'package:adzmavall/core/lookup/lookup_item.dart';
 import 'package:adzmavall/core/lookup/lookup_repository.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
-import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:adzmavall/features/influencer_profile/data/profile_edit_repository.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/profile_refresh_notifier.dart';
 import 'package:adzmavall/utils/appcolors.dart';
@@ -115,10 +116,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _categories = (await _lookups.fetchCategories()).items;
       } catch (_) {}
 
-      _creatorType = <String>['creator_type', 'creatorType', 'type']
-          .map((String k) => _str(p[k]))
-          .firstWhere((String s) => s.isNotEmpty, orElse: () => 'influencer')
-          .toLowerCase();
+      _creatorType = _creatorTypeFromJson(p);
 
       // Type-specific lookups (best-effort).
       if (_creatorType == 'model') {
@@ -189,6 +187,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   String _str(Object? v) =>
       (v == null || v.toString() == 'null') ? '' : v.toString();
+
+  String _creatorTypeFromJson(Map<String, dynamic> p) {
+    for (final String key in <String>['creator_type', 'creatorType', 'type']) {
+      final Object? value = p[key];
+      if (value is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+        for (final String nestedKey in <String>[
+          'value',
+          'label',
+          'name',
+          'title',
+          'slug',
+          'key',
+        ]) {
+          final Object? nested = map[nestedKey];
+          final String s = _str(nested).toLowerCase().trim();
+          if (s.isNotEmpty) return s;
+        }
+      }
+      final String s = _str(value).toLowerCase().trim();
+      if (s.isNotEmpty && s != 'null') return s;
+    }
+    return 'influencer';
+  }
 
   /// Normalises a boolean-ish value to 'yes' / 'no' (or null when unknown).
   String? _yesNoStr(Object? v) {
@@ -516,7 +538,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         spacing: 8.w,
                         runSpacing: 8.h,
                         children: _categories.map((LookupItem c) {
-                          final bool sel = _selectedCategories.contains(c.value);
+                          final bool sel = _selectedCategories.contains(
+                            c.value,
+                          );
                           return InkWell(
                             onTap: () => setState(() {
                               if (sel) {
@@ -532,7 +556,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 vertical: 8.h,
                               ),
                               decoration: BoxDecoration(
-                                color: sel ? AppColors.brandBlue : AppColors.white,
+                                color: sel
+                                    ? AppColors.brandBlue
+                                    : AppColors.white,
                                 borderRadius: BorderRadius.circular(800.r),
                                 border: Border.all(
                                   color: sel
@@ -621,9 +647,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             child: TextField(
               controller: controller,
-              keyboardType: maxLines > 1
-                  ? TextInputType.multiline
-                  : keyboard,
+              keyboardType: maxLines > 1 ? TextInputType.multiline : keyboard,
               maxLines: maxLines,
               decoration: InputDecoration(
                 isCollapsed: true,

@@ -195,11 +195,10 @@ class CreatorProfileTabData {
       'ageRanges',
     ], prefixHash: false);
 
-    final List<String> clientCategories = _stringList(
-      bundle.profile,
-      <String>['client_categories', 'clientCategories'],
-      prefixHash: false,
-    );
+    final List<String> clientCategories = _stringList(bundle.profile, <String>[
+      'client_categories',
+      'clientCategories',
+    ], prefixHash: false);
 
     return CreatorProfileTabData(
       accounts: accounts,
@@ -342,10 +341,31 @@ class CreatorProfileTabData {
   // ---------------------------------------------------------------------------
 
   static String _pick(Map<String, dynamic> json, List<String> keys) {
+    String stringify(Object? value) {
+      if (value is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+        for (final String key in <String>[
+          'label',
+          'name',
+          'title',
+          'value',
+          'slug',
+          'key',
+        ]) {
+          final Object? nested = map[key];
+          if (nested != null && nested.toString().trim().isNotEmpty) {
+            return nested.toString().trim();
+          }
+        }
+      }
+      return value?.toString().trim() ?? '';
+    }
+
     for (final String key in keys) {
       final Object? value = json[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString().trim();
+      final String text = stringify(value);
+      if (text.isNotEmpty) {
+        return text;
       }
     }
     return '';
