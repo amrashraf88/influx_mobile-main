@@ -331,16 +331,31 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
   }
 
   Future<void> _editAdPrice() async {
+    // Ad prices are stored per social account (each has a `prices` array), so
+    // pick the platform first, then update that account.
+    final List<CreatorAdPriceItem> items = _data.tabData.adPriceItems
+        .where((CreatorAdPriceItem p) => p.id.isNotEmpty)
+        .toList();
+    if (items.isEmpty) {
+      _toast('Add a social account first to set ad prices.');
+      return;
+    }
+
     final Map<String, String>? r = await showCreatorFormSheet(
       context,
       title: 'Edit ad prices',
-      fields: const <CreatorFormField>[
+      fields: <CreatorFormField>[
         CreatorFormField(
+          key: 'platform',
+          label: 'Platform',
+          options: items.map((CreatorAdPriceItem p) => p.label).toList(),
+        ),
+        const CreatorFormField(
           key: 'coverage_price',
           label: 'Coverage / story price',
           number: true,
         ),
-        CreatorFormField(
+        const CreatorFormField(
           key: 'video_price',
           label: 'Video / post price',
           number: true,
@@ -348,14 +363,32 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       ],
     );
     if (r == null) return;
-    final Map<String, dynamic> body = _requiredProfileBase();
-    if (_has(r['coverage_price'])) {
-      body['coverage_price'] = int.tryParse(r['coverage_price']!);
+
+    String accountId = '';
+    for (final CreatorAdPriceItem p in items) {
+      if (p.label == r['platform']) {
+        accountId = p.id;
+        break;
+      }
     }
-    if (_has(r['video_price'])) {
-      body['video_price'] = int.tryParse(r['video_price']!);
+    if (accountId.isEmpty) return;
+
+    final List<Map<String, dynamic>> prices = <Map<String, dynamic>>[];
+    final int? coverage = int.tryParse(r['coverage_price'] ?? '');
+    final int? video = int.tryParse(r['video_price'] ?? '');
+    if (coverage != null) {
+      prices.add(<String, dynamic>{'content_type': 'coverage', 'price': coverage});
     }
-    await _runWrite(() => _repo.updateProfile(body));
+    if (video != null) {
+      prices.add(<String, dynamic>{'content_type': 'video', 'price': video});
+    }
+    if (prices.isEmpty) return;
+
+    await _runWrite(
+      () => _repo.updateSocialAccount(accountId, <String, dynamic>{
+        'prices': prices,
+      }),
+    );
   }
 
   Future<void> _editDetails() async {

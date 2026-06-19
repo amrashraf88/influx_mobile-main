@@ -77,6 +77,14 @@ class CreatorProfileRepository {
             data: body,
           ));
 
+  /// `PATCH /auth/user/social-accounts/{id}` — update a linked account
+  /// (e.g. its ad `prices`).
+  Future<void> updateSocialAccount(String id, Map<String, dynamic> body) =>
+      _write(() => _dio.patch<dynamic>(
+            ApiUrlResolver.resolve(ApiEndpoints.authUserSocialAccountPath(id)),
+            data: body,
+          ));
+
   /// `DELETE /auth/user/social-accounts/{id}`.
   Future<void> deleteSocialAccount(String id) =>
       _write(() => _dio.delete<dynamic>(
