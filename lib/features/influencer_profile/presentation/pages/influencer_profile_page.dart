@@ -432,13 +432,23 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       final int? a = int.tryParse(age);
       if (a != null) body['age'] = a;
     }
-    body['mawthooq_license_number'] =
-        val(<String>[
-          'mawthooq_license_number',
-          'mawthooqLicenseNumber',
-          'license_number',
-        ]) ??
-        '';
+    // Keep the existing Mawthooq number; the API nests it under
+    // `mawthooq_profile`. Never send an empty value — that would clear it.
+    String? mawthooq = val(<String>[
+      'mawthooq_license_number',
+      'mawthooqLicenseNumber',
+      'license_number',
+    ]);
+    final Object? mawthooqProfile = j['mawthooq_profile'];
+    if ((mawthooq == null || mawthooq.isEmpty) && mawthooqProfile is Map) {
+      final Object? v =
+          mawthooqProfile['license_number'] ?? mawthooqProfile['number'];
+      final String s = v?.toString().trim() ?? '';
+      if (s.isNotEmpty && s != 'null') mawthooq = s;
+    }
+    if (mawthooq != null && mawthooq.isNotEmpty) {
+      body['mawthooq_license_number'] = mawthooq;
+    }
     final Object? cats = j['categories'];
     if (cats is List) {
       final List<int> ids = cats

@@ -85,7 +85,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _fullNameAr.text = _str(p['full_name_ar']);
       _age.text = _str(p['age']);
       _street.text = _str(p['street']);
-      _mawthooq.text = _str(p['mawthooq_license_number']);
+      _mawthooq.text = _mawthooqFrom(p);
       _phone.text = _str(p['phone_number']).isNotEmpty
           ? _str(p['phone_number'])
           : _str(p['phone']);
@@ -110,6 +110,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   String _str(Object? v) =>
       (v == null || v.toString() == 'null') ? '' : v.toString();
+
+  /// The Mawthooq number is nested under `mawthooq_profile` in the API
+  /// response, with a few flat fallbacks.
+  String _mawthooqFrom(Map<String, dynamic> p) {
+    final Object? m = p['mawthooq_profile'];
+    if (m is Map) {
+      final String nested = _str(m['license_number'] ?? m['number']);
+      if (nested.isNotEmpty) return nested;
+    }
+    for (final String k in <String>[
+      'mawthooq_license_number',
+      'mawthooqLicenseNumber',
+      'license_number',
+      'mawthooq',
+    ]) {
+      final String s = _str(p[k]);
+      if (s.isNotEmpty) return s;
+    }
+    return '';
+  }
 
   String? _valueOf(Object? v) {
     if (v == null) return null;
