@@ -38,7 +38,9 @@ class _CompanyCampaignDetailsPageState
   @override
   void initState() {
     super.initState();
-    _detail = CompanyCampaignsViewData.detailFor(widget.campaignId);
+    _detail = ApiUrlResolver.isConfigured
+        ? CompanyCampaignDetail.empty(widget.campaignId)
+        : CompanyCampaignsViewData.detailFor(widget.campaignId);
     _selectedPlatforms = Set<String>.from(_detail.selectedPlatforms);
     _loadDetail();
   }
@@ -59,7 +61,7 @@ class _CompanyCampaignDetailsPageState
         _selectedPlatforms = Set<String>.from(detail.selectedPlatforms);
       });
     } on Object {
-      // Keep the view-data fallback already in _detail.
+      // Keep the current empty/API-safe state; do not inject mock campaign data.
     }
   }
 
@@ -90,27 +92,29 @@ class _CompanyCampaignDetailsPageState
               filledSegments: _detail.progressSegmentsFilled,
             ),
             SizedBox(height: 16.h),
-            SizedBox(
-              height: CompanyCampaignCreatorCardLayout.designHeight(),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _detail.creators.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final CompanyCampaignCreatorSummary c =
-                      _detail.creators[index];
-                  return CompanyCampaignCreatorCard(
-                    creator: c,
-                    onTap: () => context.push(
-                      RouteNames.companyCampaignInfluencerDetailsPath(
-                        campaignId: widget.campaignId,
-                        influencerId: c.id,
+            if (_detail.creators.isNotEmpty) ...<Widget>[
+              SizedBox(
+                height: CompanyCampaignCreatorCardLayout.designHeight(),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _detail.creators.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final CompanyCampaignCreatorSummary c =
+                        _detail.creators[index];
+                    return CompanyCampaignCreatorCard(
+                      creator: c,
+                      onTap: () => context.push(
+                        RouteNames.companyCampaignInfluencerDetailsPath(
+                          campaignId: widget.campaignId,
+                          influencerId: c.id,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            SizedBox(height: 16.h),
+              SizedBox(height: 16.h),
+            ],
             ProfileSectionCard(
               title: AppStrings.of(locale, 'company_campaign_details_title'),
               children: <Widget>[

@@ -200,6 +200,31 @@ class CompanyCampaignDetail extends Equatable {
     this.availablePlatforms = const <String>[],
   });
 
+  factory CompanyCampaignDetail.empty(String id) {
+    return CompanyCampaignDetail(
+      id: id,
+      title: '',
+      status: CompanyCampaignListStatus.newPendingApproval,
+      coverImageUrl: '',
+      statusLabelKey: 'company_home_campaign_status_pending',
+      deliveryDateLabel: '',
+      progressSegmentsFilled: 1,
+      creators: const <CompanyCampaignCreatorSummary>[],
+      brandName: '',
+      website: '',
+      campaignTitle: '',
+      targetFollowers: '',
+      targetAgeGroup: '',
+      budgetMin: '',
+      budgetMax: '',
+      deliveryDateField: '',
+      detailsText: '',
+      attachedFileName: '',
+      selectedPlatforms: const <String>{},
+      availablePlatforms: const <String>[],
+    );
+  }
+
   final String id;
   final String title;
   final CompanyCampaignListStatus status;

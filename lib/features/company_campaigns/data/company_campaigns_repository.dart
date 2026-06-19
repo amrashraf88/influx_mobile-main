@@ -27,11 +27,9 @@ class CompanyCampaignsRepository {
         .toList();
   }
 
-  /// Fetches one campaign's full detail. Any field the API omits keeps the
-  /// matching [CompanyCampaignsViewData.detailFor] value so the screen stays
-  /// complete.
+  /// Fetches one campaign's full detail from the live brand API.
   Future<CompanyCampaignDetail> fetchCampaignDetail(String id) async {
-    final CompanyCampaignDetail base = CompanyCampaignsViewData.detailFor(id);
+    final CompanyCampaignDetail base = CompanyCampaignDetail.empty(id);
     final String url = ApiUrlResolver.resolve(
       ApiEndpoints.brandCampaignPath(id),
     );
@@ -60,10 +58,9 @@ class CompanyCampaignsRepository {
     );
     final List<CompanyCampaignCreatorSummary> creators = _parseCreators(json);
     final Set<String> selectedPlatforms = _parsePlatforms(json);
-    final List<String> availablePlatforms = <String>{
-      ...base.availablePlatforms,
-      ...selectedPlatforms,
-    }.where((String p) => p.trim().isNotEmpty).toList();
+    final List<String> availablePlatforms = selectedPlatforms
+        .where((String p) => p.trim().isNotEmpty)
+        .toList();
     final String attachment = pick(<String>[
       'attached_file_name',
       'attachedFileName',
@@ -91,7 +88,7 @@ class CompanyCampaignsRepository {
         'date',
       ], base.deliveryDateLabel),
       progressSegmentsFilled: _progressSegments(json, status),
-      creators: creators.isEmpty ? base.creators : creators,
+      creators: creators,
       brandName: pick(<String>['brand_name', 'company_name'], base.brandName),
       website: pick(<String>[
         'website_link',
@@ -118,12 +115,8 @@ class CompanyCampaignsRepository {
         'brief',
       ], base.detailsText),
       attachedFileName: attachment,
-      selectedPlatforms: selectedPlatforms.isEmpty
-          ? base.selectedPlatforms
-          : selectedPlatforms,
-      availablePlatforms: availablePlatforms.isEmpty
-          ? base.availablePlatforms
-          : availablePlatforms,
+      selectedPlatforms: selectedPlatforms,
+      availablePlatforms: availablePlatforms,
     );
   }
 
