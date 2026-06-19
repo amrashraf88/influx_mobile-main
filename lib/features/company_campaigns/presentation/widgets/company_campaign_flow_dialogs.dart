@@ -15,7 +15,9 @@ Future<void> showConfirmInfluencerAdditionDialog(BuildContext context) {
     builder: (BuildContext ctx) {
       return Dialog(
         backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28.r),
+        ),
         insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
         child: Padding(
           padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 24.h),
@@ -87,7 +89,10 @@ Future<void> showConfirmInfluencerAdditionDialog(BuildContext context) {
                 width: double.infinity,
                 height: 48.h,
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    context.go(RouteNames.companyCampaigns);
+                  },
                   style: OutlinedButton.styleFrom(
                     backgroundColor: AppColors.white,
                     foregroundColor: const Color(0xFFEF4444),
@@ -120,7 +125,9 @@ Future<void> showPaymentSuccessDialog(BuildContext context) {
     barrierDismissible: false,
     builder: (BuildContext ctx) {
       return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(20.w, 28.h, 20.w, 20.h),
           child: Column(
@@ -159,7 +166,7 @@ Future<void> showPaymentSuccessDialog(BuildContext context) {
                 child: FilledButton(
                   onPressed: () {
                     Navigator.of(ctx).pop();
-                    context.go(RouteNames.companyHome);
+                    context.go(RouteNames.companyCampaigns);
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.brandBlue,
