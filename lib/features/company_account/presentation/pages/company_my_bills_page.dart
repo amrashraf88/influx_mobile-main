@@ -1,4 +1,7 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/features/company_account/data/company_account_repository.dart';
 import 'package:adzmavall/features/company_account/data/company_account_view_data.dart';
 import 'package:adzmavall/features/company_account/presentation/models/company_account_models.dart';
 import 'package:adzmavall/features/company_account/presentation/widgets/company_account_sub_page_sheet.dart';
@@ -7,8 +10,47 @@ import 'package:adzmavall/utils/imageassets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class CompanyMyBillsPage extends StatelessWidget {
+class CompanyMyBillsPage extends StatefulWidget {
   const CompanyMyBillsPage({super.key});
+
+  @override
+  State<CompanyMyBillsPage> createState() => _CompanyMyBillsPageState();
+}
+
+class _CompanyMyBillsPageState extends State<CompanyMyBillsPage> {
+  List<CompanyBillItem> _bills = CompanyAccountViewData.bills;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBills();
+  }
+
+  Future<void> _loadBills() async {
+    if (!ApiUrlResolver.isConfigured) {
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final List<CompanyBillItem> bills = await CompanyAccountRepository(
+        DioClient.instance,
+      ).fetchBills();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        if (bills.isNotEmpty) {
+          _bills = bills;
+        }
+        _loading = false;
+      });
+    } on Object {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,16 +58,20 @@ class CompanyMyBillsPage extends StatelessWidget {
 
     return CompanyAccountSubPageSheet(
       title: AppStrings.of(locale, 'company_account_bills_title'),
-      child: ListView.separated(
-        padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 20.h),
-        itemCount: CompanyAccountViewData.bills.length,
-        separatorBuilder: (_, _) => SizedBox(height: 12.h),
-        itemBuilder: (BuildContext context, int index) {
-          return _BillTile(
-            bill: CompanyAccountViewData.bills[index],
-            locale: locale,
-          );
-        },
+      child: RefreshIndicator(
+        onRefresh: _loadBills,
+        child: ListView.separated(
+          padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 20.h),
+          itemCount: _loading ? _bills.length + 1 : _bills.length,
+          separatorBuilder: (_, _) => SizedBox(height: 12.h),
+          itemBuilder: (BuildContext context, int index) {
+            if (_loading && index == 0) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final CompanyBillItem bill = _bills[_loading ? index - 1 : index];
+            return _BillTile(bill: bill, locale: locale);
+          },
+        ),
       ),
     );
   }
@@ -90,10 +136,12 @@ class _BillTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: bill.invoiceUrl.trim().isEmpty ? null : () {},
                 icon: Icon(
                   Icons.download_rounded,
-                  color: AppColors.brandBlue,
+                  color: bill.invoiceUrl.trim().isEmpty
+                      ? AppColors.textSecondary
+                      : AppColors.brandBlue,
                   size: 24.sp,
                 ),
                 padding: EdgeInsets.zero,

@@ -43,14 +43,16 @@ class CompanyAccountMenuItem extends Equatable {
   final String? trailingBalance;
 
   @override
-  List<Object?> get props => <Object?>[titleKey, iconAsset, action, trailingBalance];
+  List<Object?> get props => <Object?>[
+    titleKey,
+    iconAsset,
+    action,
+    trailingBalance,
+  ];
 }
 
 class CompanyAccountSection extends Equatable {
-  const CompanyAccountSection({
-    required this.titleKey,
-    required this.items,
-  });
+  const CompanyAccountSection({required this.titleKey, required this.items});
 
   final String titleKey;
   final List<CompanyAccountMenuItem> items;
@@ -75,21 +77,28 @@ class CompanyWalletTransaction extends Equatable {
   final CompanyWalletTransactionStatus status;
 
   @override
-  List<Object?> get props =>
-      <Object?>[title, dateLabel, amount, isCredit, status];
+  List<Object?> get props => <Object?>[
+    title,
+    dateLabel,
+    amount,
+    isCredit,
+    status,
+  ];
 }
 
 class CompanyBillItem extends Equatable {
   const CompanyBillItem({
     required this.campaignId,
     required this.totalPaid,
+    this.invoiceUrl = '',
   });
 
   final String campaignId;
   final String totalPaid;
+  final String invoiceUrl;
 
   @override
-  List<Object?> get props => <Object?>[campaignId, totalPaid];
+  List<Object?> get props => <Object?>[campaignId, totalPaid, invoiceUrl];
 }
 
 class CompanyLanguageOption extends Equatable {

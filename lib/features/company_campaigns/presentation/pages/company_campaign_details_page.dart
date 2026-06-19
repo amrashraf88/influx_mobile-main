@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// Campaign details — mock [CompanyCampaignsViewData.detailFor]; API later.
+/// Campaign details loaded from the brand campaign API with local fallback.
 class CompanyCampaignDetailsPage extends StatefulWidget {
   const CompanyCampaignDetailsPage({super.key, required this.campaignId});
 
@@ -360,11 +360,12 @@ class _CampaignHeroSummary extends StatelessWidget {
           SizedBox(height: 14.h),
           Row(
             children: <Widget>[
-              const _PlatformDot(platform: 'instagram'),
-              SizedBox(width: 7.w),
-              const _PlatformDot(platform: 'tiktok'),
-              SizedBox(width: 7.w),
-              const _PlatformDot(platform: 'youtube'),
+              for (final String platform in detail.selectedPlatforms.take(
+                3,
+              )) ...<Widget>[
+                _PlatformDot(platform: platform),
+                SizedBox(width: 7.w),
+              ],
               const Spacer(),
               Text(
                 '${detail.budgetMin} - ${detail.budgetMax} SAR',

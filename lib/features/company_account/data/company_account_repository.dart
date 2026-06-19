@@ -76,6 +76,64 @@ class CompanyAccountRepository {
     );
   }
 
+  Future<List<CompanyBillItem>> fetchBills() async {
+    final Response<dynamic> res = await _dio.get<dynamic>(
+      ApiUrlResolver.resolve(ApiEndpoints.authCampaignsPath),
+    );
+    return _extractList(res.data)
+        .whereType<Map<dynamic, dynamic>>()
+        .map((Map<dynamic, dynamic> row) {
+          final Map<String, dynamic> json = Map<String, dynamic>.from(row);
+          String pick(List<String> keys) {
+            for (final String key in keys) {
+              final Object? value = json[key];
+              if (value != null && value.toString().trim().isNotEmpty) {
+                return value.toString().trim();
+              }
+            }
+            return '';
+          }
+
+          final Object? totalRaw =
+              json['total_paid'] ??
+              json['paid_total'] ??
+              json['amount'] ??
+              json['total'] ??
+              json['budget'];
+          final num total = totalRaw is num
+              ? totalRaw
+              : num.tryParse(totalRaw?.toString() ?? '') ?? 0;
+
+          return CompanyBillItem(
+            campaignId: pick(<String>[
+              'code',
+              'reference',
+              'ref',
+              'number',
+              'id',
+              'uuid',
+            ]),
+            totalPaid: total == 0
+                ? pick(<String>['total_paid_label'])
+                : '$total',
+            invoiceUrl: pick(<String>[
+              'invoice_url',
+              'invoiceUrl',
+              'bill_url',
+              'billUrl',
+              'receipt_url',
+              'receiptUrl',
+            ]),
+          );
+        })
+        .where(
+          (CompanyBillItem bill) =>
+              bill.campaignId.trim().isNotEmpty ||
+              bill.totalPaid.trim().isNotEmpty,
+        )
+        .toList();
+  }
+
   static Map<String, dynamic> _extractMap(dynamic data) {
     if (data is Map) {
       final Map<String, dynamic> map = Map<String, dynamic>.from(data);
@@ -86,5 +144,28 @@ class CompanyAccountRepository {
       return map;
     }
     return <String, dynamic>{};
+  }
+
+  static List<dynamic> _extractList(dynamic data) {
+    if (data is List<dynamic>) {
+      return data;
+    }
+    if (data is Map) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(data);
+      for (final String key in <String>[
+        'data',
+        'results',
+        'items',
+        'campaigns',
+        'bills',
+        'invoices',
+      ]) {
+        final Object? value = map[key];
+        if (value is List<dynamic>) {
+          return value;
+        }
+      }
+    }
+    return const <dynamic>[];
   }
 }

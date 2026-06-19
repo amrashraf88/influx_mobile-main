@@ -9,6 +9,7 @@ import 'package:adzmavall/features/company_account/presentation/widgets/company_
 import 'package:adzmavall/features/company_account/presentation/widgets/company_account_profile_header.dart';
 import 'package:adzmavall/features/company_account/presentation/widgets/company_sign_out_dialog.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
+import 'package:adzmavall/features/influencer_settings/data/wallet_repository.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +25,7 @@ class CompanyAccountPage extends StatefulWidget {
 
 class _CompanyAccountPageState extends State<CompanyAccountPage> {
   CompanyAccountProfile _profile = CompanyAccountViewData.profile;
+  String _walletBalance = CompanyAccountViewData.profile.walletBalance;
 
   @override
   void initState() {
@@ -48,6 +50,19 @@ class _CompanyAccountPageState extends State<CompanyAccountPage> {
       setState(() => _profile = profile);
     } on Object {
       // Keep the view-data fallback already in _profile.
+    }
+    try {
+      final WalletSummary wallet = await WalletRepository(
+        DioClient.instance,
+      ).fetchSummary();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _walletBalance = wallet.availableBalance.toString();
+      });
+    } on Object {
+      // Keep the view-data balance.
     }
   }
 
@@ -111,6 +126,7 @@ class _CompanyAccountPageState extends State<CompanyAccountPage> {
                     child: SingleChildScrollView(
                       padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 24.h),
                       child: CompanyAccountMenuPanel(
+                        walletBalance: _walletBalance,
                         onAction: (CompanyAccountMenuAction a) =>
                             _onMenuAction(context, a),
                         onSignOut: () => _onSignOut(context),

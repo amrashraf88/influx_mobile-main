@@ -16,10 +16,12 @@ class CompanyAccountMenuPanel extends StatelessWidget {
     super.key,
     required this.onAction,
     required this.onSignOut,
+    this.walletBalance,
   });
 
   final ValueChanged<CompanyAccountMenuAction> onAction;
   final VoidCallback onSignOut;
+  final String? walletBalance;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class CompanyAccountMenuPanel extends StatelessWidget {
           _SectionBlock(
             section: CompanyAccountViewData.menuSections[i],
             locale: locale,
+            walletBalance: walletBalance,
             onAction: onAction,
           ),
           if (i != CompanyAccountViewData.menuSections.length - 1)
@@ -70,11 +73,13 @@ class _SectionBlock extends StatelessWidget {
   const _SectionBlock({
     required this.section,
     required this.locale,
+    required this.walletBalance,
     required this.onAction,
   });
 
   final CompanyAccountSection section;
   final Locale locale;
+  final String? walletBalance;
   final ValueChanged<CompanyAccountMenuAction> onAction;
 
   @override
@@ -101,11 +106,16 @@ class _SectionBlock extends StatelessWidget {
           ),
           child: Column(
             children: <Widget>[
-              for (int index = 0; index < section.items.length; index++) ...<Widget>[
+              for (
+                int index = 0;
+                index < section.items.length;
+                index++
+              ) ...<Widget>[
                 _MenuRow(
                   item: section.items[index],
                   locale: locale,
                   isRtl: isRtl,
+                  walletBalance: walletBalance,
                   onTap: () => onAction(section.items[index].action),
                 ),
                 if (index != section.items.length - 1)
@@ -130,12 +140,14 @@ class _MenuRow extends StatelessWidget {
     required this.item,
     required this.locale,
     required this.isRtl,
+    required this.walletBalance,
     required this.onTap,
   });
 
   final CompanyAccountMenuItem item;
   final Locale locale;
   final bool isRtl;
+  final String? walletBalance;
   final VoidCallback onTap;
 
   @override
@@ -171,9 +183,9 @@ class _MenuRow extends StatelessWidget {
                   ),
                 ),
               ),
-              if (item.trailingBalance != null) ...<Widget>[
+              if (_trailingBalance != null) ...<Widget>[
                 Text(
-                  item.trailingBalance!,
+                  _trailingBalance!,
                   style: TextStyle(
                     color: AppColors.brandBlue,
                     fontSize: 14.sp,
@@ -201,5 +213,14 @@ class _MenuRow extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String? get _trailingBalance {
+    if (item.action == CompanyAccountMenuAction.wallet &&
+        walletBalance != null &&
+        walletBalance!.trim().isNotEmpty) {
+      return walletBalance;
+    }
+    return item.trailingBalance;
   }
 }

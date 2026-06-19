@@ -1,4 +1,7 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/features/company_campaigns/data/company_campaigns_repository.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_campaigns_view_data.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/models/company_campaign_models.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_back_app_bar.dart';
@@ -9,8 +12,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Influencer details from a campaign — mock data until API.
-class CompanyCampaignInfluencerDetailsPage extends StatelessWidget {
+/// Influencer details from a campaign request, loaded from API with fallback.
+class CompanyCampaignInfluencerDetailsPage extends StatefulWidget {
   const CompanyCampaignInfluencerDetailsPage({
     super.key,
     required this.campaignId,
@@ -21,10 +24,43 @@ class CompanyCampaignInfluencerDetailsPage extends StatelessWidget {
   final String influencerId;
 
   @override
+  State<CompanyCampaignInfluencerDetailsPage> createState() =>
+      _CompanyCampaignInfluencerDetailsPageState();
+}
+
+class _CompanyCampaignInfluencerDetailsPageState
+    extends State<CompanyCampaignInfluencerDetailsPage> {
+  late CompanyCampaignInfluencerDetail _detail;
+
+  @override
+  void initState() {
+    super.initState();
+    _detail = CompanyCampaignsViewData.influencerDetail(widget.influencerId);
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    if (!ApiUrlResolver.isConfigured) {
+      return;
+    }
+    try {
+      final CompanyCampaignInfluencerDetail detail =
+          await CompanyCampaignsRepository(
+            DioClient.instance,
+          ).fetchCampaignInfluencerDetail(widget.influencerId);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _detail = detail);
+    } on Object {
+      // Keep the local fallback.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
-    final CompanyCampaignInfluencerDetail d =
-        CompanyCampaignsViewData.influencerDetail(influencerId);
+    final CompanyCampaignInfluencerDetail d = _detail;
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,

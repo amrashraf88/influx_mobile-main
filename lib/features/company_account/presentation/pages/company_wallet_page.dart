@@ -77,6 +77,119 @@ class _CompanyWalletPageState extends State<CompanyWalletPage> {
     );
   }
 
+  Future<void> _submitWalletAction({
+    required bool withdraw,
+    required num amount,
+  }) async {
+    final WalletRepository repo = WalletRepository(DioClient.instance);
+    try {
+      if (withdraw) {
+        await repo.withdraw(amount);
+      } else {
+        await repo.chargeCard(amount);
+      }
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(withdraw ? 'Withdraw sent' : 'Charge started')),
+      );
+      await _loadWallet();
+    } on Object catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> _showAmountSheet({required bool withdraw}) async {
+    final TextEditingController amount = TextEditingController();
+    final num? value = await showModalBottomSheet<num>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              18.w,
+              18.h,
+              18.w,
+              MediaQuery.paddingOf(sheetContext).bottom + 18.h,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  withdraw ? 'Withdraw amount' : 'Add balance',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                TextField(
+                  controller: amount,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Amount',
+                    filled: true,
+                    fillColor: const Color(0xFFF7F8FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                      borderSide: const BorderSide(color: Color(0xFFE1E5EC)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                      borderSide: const BorderSide(color: Color(0xFFE1E5EC)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46.h,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.brandBlue,
+                      foregroundColor: AppColors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                    onPressed: () {
+                      final num? parsed = num.tryParse(amount.text.trim());
+                      if (parsed != null && parsed > 0) {
+                        Navigator.of(sheetContext).pop(parsed);
+                      }
+                    },
+                    child: const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    amount.dispose();
+    if (value != null) {
+      await _submitWalletAction(withdraw: withdraw, amount: value);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
@@ -93,6 +206,8 @@ class _CompanyWalletPageState extends State<CompanyWalletPage> {
               balance: _balance,
               pending: _pending,
               total: _total,
+              onAdd: () => _showAmountSheet(withdraw: false),
+              onWithdraw: () => _showAmountSheet(withdraw: true),
             ),
             SizedBox(height: 20.h),
             Text(
@@ -104,7 +219,8 @@ class _CompanyWalletPageState extends State<CompanyWalletPage> {
               ),
             ),
             SizedBox(height: 12.h),
-            for (final CompanyWalletTransaction tx in _transactions) ...<Widget>[
+            for (final CompanyWalletTransaction tx
+                in _transactions) ...<Widget>[
               _TransactionTile(tx: tx, locale: locale),
               SizedBox(height: 10.h),
             ],
@@ -121,12 +237,16 @@ class _BalanceCard extends StatelessWidget {
     required this.balance,
     required this.pending,
     required this.total,
+    required this.onAdd,
+    required this.onWithdraw,
   });
 
   final Locale locale;
   final String balance;
   final String pending;
   final String total;
+  final VoidCallback onAdd;
+  final VoidCallback onWithdraw;
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +321,7 @@ class _BalanceCard extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: FilledButton(
-                    onPressed: () {},
+                    onPressed: onAdd,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.brandBlue,
                       minimumSize: Size(0, 42.h),
@@ -221,7 +341,7 @@ class _BalanceCard extends StatelessWidget {
                 SizedBox(width: 10.w),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: onWithdraw,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.brandBlue,
                       minimumSize: Size(0, 42.h),
@@ -285,18 +405,19 @@ class _TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hold = tx.status == CompanyWalletTransactionStatus.paymentHold;
-    final Color badgeBg =
-        hold ? const Color(0xFFE8F4FF) : const Color(0xFFFFE8E8);
-    final Color badgeText =
-        hold ? AppColors.brandBlue : const Color(0xFFE85D5D);
+    final Color badgeBg = hold
+        ? const Color(0xFFE8F4FF)
+        : const Color(0xFFFFE8E8);
+    final Color badgeText = hold
+        ? AppColors.brandBlue
+        : const Color(0xFFE85D5D);
     final String statusLabel = AppStrings.of(
       locale,
-      hold
-          ? 'company_account_payment_hold'
-          : 'company_account_payment_release',
+      hold ? 'company_account_payment_hold' : 'company_account_payment_release',
     );
-    final Color amountColor =
-        tx.isCredit ? const Color(0xFF25B861) : const Color(0xFFE85D5D);
+    final Color amountColor = tx.isCredit
+        ? const Color(0xFF25B861)
+        : const Color(0xFFE85D5D);
 
     return Container(
       padding: EdgeInsets.all(12.w),

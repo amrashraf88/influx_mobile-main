@@ -1,7 +1,8 @@
 import 'package:adzmavall/core/config/api_endpoints.dart';
 import 'package:adzmavall/core/network/api_error_parser.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
-import 'package:adzmavall/features/auth/data/auth_repository.dart' show ApiException;
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:dio/dio.dart';
 
 /// Wallet balance summary from `GET /auth/wallet`.
@@ -56,15 +57,24 @@ class WalletTransaction {
     final num amount = json['amount'] is num
         ? json['amount'] as num
         : num.tryParse(json['amount']?.toString() ?? '') ?? 0;
-    final String type = pick(<String>['type', 'direction', 'kind']).toLowerCase();
-    final bool incoming = type.contains('credit') ||
+    final String type = pick(<String>[
+      'type',
+      'direction',
+      'kind',
+    ]).toLowerCase();
+    final bool incoming =
+        type.contains('credit') ||
         type.contains('deposit') ||
         type.contains('in') ||
         amount >= 0;
 
     return WalletTransaction(
-      title: pick(<String>['title', 'description', 'reason', 'name'])
-          .ifEmpty('Transaction'),
+      title: pick(<String>[
+        'title',
+        'description',
+        'reason',
+        'name',
+      ]).ifEmpty('Transaction'),
       amount: amount,
       incoming: incoming,
       dateLabel: pick(<String>['created_at_label', 'date', 'created_at']),
@@ -100,11 +110,35 @@ class WalletRepository {
       if (data is List) {
         return data
             .whereType<Map>()
-            .map((Map e) =>
-                WalletTransaction.fromJson(Map<String, dynamic>.from(e)))
+            .map(
+              (Map e) =>
+                  WalletTransaction.fromJson(Map<String, dynamic>.from(e)),
+            )
             .toList();
       }
       return <WalletTransaction>[];
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
+    }
+  }
+
+  Future<void> chargeCard(num amount) async {
+    try {
+      await _dio.post<dynamic>(
+        ApiUrlResolver.resolve(ApiEndpoints.applicationWalletChargeCardPath),
+        data: <String, dynamic>{'amount': amount},
+      );
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
+    }
+  }
+
+  Future<void> withdraw(num amount) async {
+    try {
+      await _dio.post<dynamic>(
+        ApiUrlResolver.resolve(ApiEndpoints.applicationWalletWithdrawPath),
+        data: <String, dynamic>{'amount': amount},
+      );
     } on DioException catch (e) {
       throw ApiException(ApiErrorParser.messageFromDio(e));
     }
