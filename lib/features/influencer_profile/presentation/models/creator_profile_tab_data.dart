@@ -218,15 +218,7 @@ class CreatorProfileTabData {
   // ---------------------------------------------------------------------------
 
   static CreatorAccountMetric _accountFromJson(Map<String, dynamic> json) {
-    final String platform = _pick(json, <String>[
-      'platform',
-      'platform_name',
-      'platformName',
-      'social_platform',
-      'socialPlatform',
-      'name',
-      'type',
-    ]);
+    final String platform = _extractPlatform(json);
     return CreatorAccountMetric(
       id: _pickId(json),
       label: _platformLabel(platform),
@@ -276,15 +268,7 @@ class CreatorProfileTabData {
   }
 
   static CreatorAdPriceItem _adPriceFromJson(Map<String, dynamic> json) {
-    final String platform = _pick(json, <String>[
-      'platform',
-      'platform_name',
-      'platformName',
-      'social_platform',
-      'socialPlatform',
-      'name',
-      'type',
-    ]);
+    final String platform = _extractPlatform(json);
     return CreatorAdPriceItem(
       id: _pickId(json),
       label: _platformLabel(platform),
@@ -324,6 +308,7 @@ class CreatorProfileTabData {
     return CreatorAdPreviewItem(
       id: _pickId(json),
       title: _pick(json, <String>[
+        'label',
         'title',
         'name',
         'ad_name',
@@ -344,6 +329,9 @@ class CreatorProfileTabData {
           'media_url',
           'mediaUrl',
           'image',
+          'video_url',
+          'videoUrl',
+          'url',
         ]),
       ),
     );
@@ -365,6 +353,47 @@ class CreatorProfileTabData {
 
   static String _pickId(Map<String, dynamic> json) =>
       _pick(json, <String>['id', '_id', 'uuid', 'uid']);
+
+  /// Resolves a platform name/slug from a social account row. The API may send
+  /// the platform as a plain string, a nested object ({name, slug, id}) or an
+  /// id referenced by another key — handle them all so the icon/label resolve.
+  static String _extractPlatform(Map<String, dynamic> json) {
+    const List<String> keys = <String>[
+      'platform',
+      'platform_name',
+      'platformName',
+      'social_platform',
+      'socialPlatform',
+      'social_platform_name',
+      'name',
+      'type',
+      'slug',
+    ];
+    for (final String key in keys) {
+      final Object? v = json[key];
+      if (v == null) continue;
+      if (v is Map) {
+        final Map<String, dynamic> m = Map<String, dynamic>.from(v);
+        for (final String nk in <String>[
+          'slug',
+          'name',
+          'title',
+          'label',
+          'value',
+          'key',
+        ]) {
+          final Object? nv = m[nk];
+          if (nv != null && nv.toString().trim().isNotEmpty) {
+            return nv.toString().trim();
+          }
+        }
+        continue;
+      }
+      final String s = v.toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+    return '';
+  }
 
   static List<String> _stringList(
     Map<String, dynamic> json,

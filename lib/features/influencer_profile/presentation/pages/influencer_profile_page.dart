@@ -286,18 +286,18 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       context,
       title: 'Add ad',
       fields: const <CreatorFormField>[
-        CreatorFormField(key: 'title', label: 'Title'),
+        CreatorFormField(key: 'label', label: 'Title / label'),
         CreatorFormField(
-          key: 'image_url',
-          label: 'Media / image URL',
+          key: 'url',
+          label: 'Link (URL)',
           hint: 'https://',
         ),
       ],
     );
     if (r == null) return;
     final Map<String, dynamic> body = <String, dynamic>{
-      'title': r['title'],
-      if (_has(r['image_url'])) 'image_url': r['image_url'],
+      'label': r['label'],
+      if (_has(r['url'])) 'url': r['url'],
     };
     await _runWrite(() => _repo.createAd(body));
   }
