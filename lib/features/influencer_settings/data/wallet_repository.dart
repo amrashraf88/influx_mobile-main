@@ -49,6 +49,20 @@ class WalletTransaction {
     String pick(List<String> keys) {
       for (final String k in keys) {
         final Object? v = json[k];
+        if (v is Map) {
+          final Map<String, dynamic> map = Map<String, dynamic>.from(v);
+          for (final String nestedKey in <String>[
+            'label',
+            'value',
+            'name',
+            'title',
+          ]) {
+            final Object? nested = map[nestedKey];
+            if (nested != null && nested.toString().trim().isNotEmpty) {
+              return nested.toString();
+            }
+          }
+        }
         if (v != null && v.toString().trim().isNotEmpty) return v.toString();
       }
       return '';

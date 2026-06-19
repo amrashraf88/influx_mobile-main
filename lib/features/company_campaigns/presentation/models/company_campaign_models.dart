@@ -46,6 +46,20 @@ class CompanyCampaignListItem extends Equatable {
     String pick(List<String> keys) {
       for (final String k in keys) {
         final Object? v = json[k];
+        if (v is Map) {
+          final Map<String, dynamic> map = Map<String, dynamic>.from(v);
+          for (final String nestedKey in <String>[
+            'value',
+            'label',
+            'name',
+            'title',
+          ]) {
+            final Object? nested = map[nestedKey];
+            if (nested != null && nested.toString().trim().isNotEmpty) {
+              return nested.toString();
+            }
+          }
+        }
         if (v != null && v.toString().trim().isNotEmpty) {
           return v.toString();
         }
@@ -68,7 +82,12 @@ class CompanyCampaignListItem extends Equatable {
     }
 
     final Object? amountRaw =
-        json['amount'] ?? json['budget'] ?? json['amount_value'] ?? json['total'];
+        json['amount'] ??
+        json['budget'] ??
+        json['amount_value'] ??
+        json['total'] ??
+        json['budget_to'] ??
+        json['budget_from'];
     final num amount = amountRaw is num
         ? amountRaw
         : num.tryParse(amountRaw?.toString() ?? '') ?? 0;
@@ -98,7 +117,7 @@ class CompanyCampaignListItem extends Equatable {
         'date',
         'created_at',
       ]),
-      code: pick(<String>['code', 'reference', 'ref', 'number']),
+      code: pick(<String>['code', 'reference', 'ref', 'number', 'id']),
       progressSegmentsFilled: segments,
     );
   }

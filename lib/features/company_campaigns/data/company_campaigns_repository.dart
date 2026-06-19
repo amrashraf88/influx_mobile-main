@@ -157,6 +157,7 @@ class CompanyCampaignsRepository {
       'total',
       'amount',
       'price',
+      'budget',
     ], base.totalWithTax);
 
     return CompanyCampaignInfluencerDetail(
@@ -200,6 +201,7 @@ class CompanyCampaignsRepository {
         'price',
         'amount',
         'total',
+        'budget',
       ], base.priceLabel),
       socialPlatforms: platforms.isEmpty ? base.socialPlatforms : platforms,
       files: files.isEmpty ? base.files : files,
@@ -388,7 +390,8 @@ class CompanyCampaignsRepository {
         'company_campaign_status_cancelled',
       CompanyCampaignListStatus.pendingClientReview =>
         'company_campaign_status_pending_client',
-      CompanyCampaignListStatus.newPendingApproval => fallback,
+      CompanyCampaignListStatus.newPendingApproval =>
+        'company_home_campaign_status_pending',
     };
   }
 
@@ -491,6 +494,13 @@ class CompanyCampaignsRepository {
       'social_accounts',
       'socialAccounts',
       'accounts',
+      'items',
+      'ugc_items',
+      'ugcItems',
+      'model_items',
+      'modelItems',
+      'collage_items',
+      'collageItems',
     ])) {
       if (item is String) {
         platforms.add(item);
@@ -499,7 +509,15 @@ class CompanyCampaignsRepository {
         platforms.add(
           _pickFromMaps(
             <Map<String, dynamic>>[map],
-            <String>['platform', 'name', 'label', 'type', 'value'],
+            <String>[
+              'platform',
+              'platform_name',
+              'platformName',
+              'name',
+              'label',
+              'type',
+              'value',
+            ],
           ),
         );
       }
@@ -562,7 +580,7 @@ class CompanyCampaignsRepository {
             labelKey: 'company_campaign_order_total',
             value: _pickFromMaps(
               <Map<String, dynamic>>[json],
-              <String>['subtotal', 'sub_total', 'amount', 'price'],
+              <String>['subtotal', 'sub_total', 'amount', 'price', 'budget'],
             ),
           ),
           (

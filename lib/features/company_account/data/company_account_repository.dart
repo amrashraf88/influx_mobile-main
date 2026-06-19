@@ -59,6 +59,8 @@ class CompanyAccountRepository {
     ]);
     final String phone = pick(<String>['phone_number', 'phone', 'mobile']);
     final String avatar = pick(<String>[
+      'brand_logo_url',
+      'brandLogoUrl',
       'logo_url',
       'logo',
       'profile_image_url',
@@ -99,7 +101,9 @@ class CompanyAccountRepository {
               json['paid_total'] ??
               json['amount'] ??
               json['total'] ??
-              json['budget'];
+              json['budget'] ??
+              json['budget_to'] ??
+              json['budget_from'];
           final num total = totalRaw is num
               ? totalRaw
               : num.tryParse(totalRaw?.toString() ?? '') ?? 0;
