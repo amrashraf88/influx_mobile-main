@@ -2,6 +2,7 @@ import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/auth/auth_token_storage.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/routes/route_names.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/company_account/data/company_account_repository.dart';
 import 'package:adzmavall/features/company_account/data/company_account_view_data.dart';
 import 'package:adzmavall/features/company_account/presentation/models/company_account_models.dart';
@@ -75,8 +76,10 @@ class _CompanyAccountPageState extends State<CompanyAccountPage> {
       case CompanyAccountMenuAction.language:
         context.push(RouteNames.companyAccountLanguage);
       case CompanyAccountMenuAction.shareApp:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Share app will be connected later.')),
+        showAppFeedback(
+          context,
+          message: 'Share app will be connected later.',
+          type: AppFeedbackType.info,
         );
       case CompanyAccountMenuAction.settings:
         context.push(RouteNames.companyAccountSettings);

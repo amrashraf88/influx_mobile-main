@@ -2,6 +2,7 @@ import 'package:adzmavall/core/lookup/lookup_item.dart';
 import 'package:adzmavall/core/lookup/lookup_repository.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/auth/data/auth_repository.dart'
     show ApiException;
 import 'package:adzmavall/features/influencer_profile/data/creator_profile_repository.dart';
@@ -508,11 +509,11 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (error != null) {
-      _toast(error);
+      _toast(error, type: AppFeedbackType.error);
       return;
     }
     await _reload();
-    if (mounted) _toast('Saved');
+    if (mounted) _toast('Saved', type: AppFeedbackType.success);
   }
 
   Future<bool> _confirmDelete() async {
@@ -536,10 +537,8 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     return ok ?? false;
   }
 
-  void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _toast(String message, {AppFeedbackType type = AppFeedbackType.info}) {
+    showAppFeedback(context, message: message, type: type);
   }
 
   static bool _has(String? v) => v != null && v.trim().isNotEmpty;

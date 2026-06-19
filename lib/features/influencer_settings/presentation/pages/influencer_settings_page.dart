@@ -2,6 +2,7 @@ import 'package:adzmavall/core/auth/auth_token_storage.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/routes/route_names.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/pages/edit_profile_page.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/profile_refresh_notifier.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
@@ -185,11 +186,14 @@ class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
       case InfluencerSettingsAction.shareApp:
         Clipboard.setData(
           const ClipboardData(
-            text: 'https://adzmavall.com — Discover & collaborate on Adz Mavall',
+            text:
+                'https://adzmavall.com — Discover & collaborate on Adz Mavall',
           ),
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App link copied')),
+        showAppFeedback(
+          context,
+          message: 'App link copied',
+          type: AppFeedbackType.success,
         );
         return;
     }
@@ -223,7 +227,7 @@ class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
                   Positioned(
                     left: 0,
                     right: 0,
-                    top: 200.h ,
+                    top: 200.h,
                     bottom: 0,
                     child: SingleChildScrollView(
                       padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
@@ -232,7 +236,10 @@ class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
                           InfluencerSettingsPanel(
                             profile: profile,
                             onAction:
-                                (InfluencerSettingsAction action, String label) {
+                                (
+                                  InfluencerSettingsAction action,
+                                  String label,
+                                ) {
                                   _handleAction(context, action, label);
                                 },
                           ),

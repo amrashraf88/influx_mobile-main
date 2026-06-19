@@ -1,4 +1,5 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_campaigns_view_data.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_platform_chip.dart';
 import 'package:adzmavall/features/profile/presentation/widgets/profile_form_widgets.dart';
@@ -70,14 +71,12 @@ class _CompanyCampaignPortfolioSectionState
       return;
     }
     if (accepted.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            accepted.length == 1
-                ? accepted.first
-                : '${accepted.length} files added',
-          ),
-        ),
+      showAppFeedback(
+        context,
+        message: accepted.length == 1
+            ? accepted.first
+            : '${accepted.length} files added',
+        type: AppFeedbackType.success,
       );
     }
     if (skippedLarge > 0) {
@@ -87,7 +86,7 @@ class _CompanyCampaignPortfolioSectionState
               locale,
               'profile_file_skipped_large_many',
             ).replaceAll('{count}', '$skippedLarge');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      showAppFeedback(context, message: msg, type: AppFeedbackType.error);
     }
   }
 
@@ -125,7 +124,10 @@ class _CompanyCampaignPortfolioSectionState
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    AppStrings.of(locale, 'profile_portfolio_upload_area_title'),
+                    AppStrings.of(
+                      locale,
+                      'profile_portfolio_upload_area_title',
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14.sp,

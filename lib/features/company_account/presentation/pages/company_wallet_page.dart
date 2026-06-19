@@ -1,6 +1,7 @@
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/localization/app_strings.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/company_account/data/company_account_view_data.dart';
 import 'package:adzmavall/features/company_account/presentation/models/company_account_models.dart';
 import 'package:adzmavall/features/company_account/presentation/widgets/company_account_sub_page_sheet.dart';
@@ -99,56 +100,170 @@ class _CompanyWalletPageState extends State<CompanyWalletPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      await _showStatusSheet(
+        success: false,
+        title: 'Request failed',
+        message: _cleanError(e),
+      );
     }
   }
 
   Future<void> _showWalletResult(WalletActionResult result) async {
     if (result.redirectUrl == null || result.redirectUrl!.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(result.message)));
+      await _showStatusSheet(
+        success: true,
+        title: 'Request sent',
+        message: result.message,
+      );
       return;
     }
 
-    await showDialog<void>(
+    await _showStatusSheet(
+      success: true,
+      title: 'Payment link ready',
+      message: result.message,
+      link: result.redirectUrl,
+    );
+  }
+
+  Future<void> _showStatusSheet({
+    required bool success,
+    required String title,
+    required String message,
+    String? link,
+  }) async {
+    final Color accent = success ? const Color(0xFF16A34A) : AppColors.error;
+    final Color softBg = success
+        ? const Color(0xFFEAFBF0)
+        : const Color(0xFFFFE8E8);
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Payment link'),
-          content: Column(
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            20.w,
+            20.h,
+            20.w,
+            MediaQuery.paddingOf(sheetContext).bottom + 20.h,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+          ),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(result.message),
-              SizedBox(height: 10.h),
-              SelectableText(
-                result.redirectUrl!,
-                style: TextStyle(color: AppColors.brandBlue, fontSize: 12.sp),
+              Container(
+                width: 52.w,
+                height: 52.w,
+                decoration: BoxDecoration(
+                  color: softBg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  success ? Icons.check_rounded : Icons.close_rounded,
+                  color: accent,
+                  size: 30.sp,
+                ),
+              ),
+              SizedBox(height: 14.h),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13.sp,
+                  height: 1.45,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (link != null && link.trim().isNotEmpty) ...<Widget>[
+                SizedBox(height: 14.h),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F9FF),
+                    borderRadius: BorderRadius.circular(14.r),
+                    border: Border.all(color: const Color(0xFFE1E5EC)),
+                  ),
+                  child: SelectableText(
+                    link,
+                    style: TextStyle(
+                      color: AppColors.brandBlue,
+                      fontSize: 12.sp,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+              SizedBox(height: 18.h),
+              Row(
+                children: <Widget>[
+                  if (link != null && link.trim().isNotEmpty) ...<Widget>[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: link));
+                          Navigator.of(sheetContext).pop();
+                          _showInlineNotice('Payment link copied');
+                        },
+                        icon: Icon(Icons.copy_rounded, size: 18.sp),
+                        label: const Text('Copy'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.brandBlue,
+                          side: const BorderSide(color: AppColors.brandBlue),
+                          minimumSize: Size(0, 46.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                  ],
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: success ? AppColors.brandBlue : accent,
+                        foregroundColor: AppColors.white,
+                        minimumSize: Size(0, 46.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: result.redirectUrl!));
-                Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Payment link copied')),
-                );
-              },
-              child: const Text('Copy link'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Done'),
-            ),
-          ],
         );
       },
     );
+  }
+
+  void _showInlineNotice(String message) {
+    showAppFeedback(context, message: message, type: AppFeedbackType.success);
+  }
+
+  String _cleanError(Object e) {
+    final String raw = e.toString().replaceFirst('Exception: ', '').trim();
+    return raw.isEmpty ? 'Something went wrong. Please try again.' : raw;
   }
 
   Future<void> _showAmountSheet({required bool withdraw}) async {

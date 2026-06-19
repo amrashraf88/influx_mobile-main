@@ -1,3 +1,4 @@
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/widgets/settings_sub_app_bar.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -31,15 +32,17 @@ class ContactUsPage extends StatelessWidget {
         child: ListView.separated(
           padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
           itemCount: _contacts.length,
-          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+          separatorBuilder: (_, _) => SizedBox(height: 12.h),
           itemBuilder: (BuildContext context, int index) {
             final _Contact c = _contacts[index];
             return InkWell(
               borderRadius: BorderRadius.circular(14.r),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: c.value));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${c.label} copied')),
+                showAppFeedback(
+                  context,
+                  message: '${c.label} copied',
+                  type: AppFeedbackType.success,
                 );
               },
               child: Container(
@@ -59,7 +62,11 @@ class ContactUsPage extends StatelessWidget {
                         color: AppColors.brandBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
-                      child: Icon(c.icon, size: 20.sp, color: AppColors.brandBlue),
+                      child: Icon(
+                        c.icon,
+                        size: 20.sp,
+                        color: AppColors.brandBlue,
+                      ),
                     ),
                     SizedBox(width: 12.w),
                     Expanded(

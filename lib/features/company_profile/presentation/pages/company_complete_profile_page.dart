@@ -1,5 +1,6 @@
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/routes/route_names.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/auth/presentation/widgets/auth_header_grid_painter.dart';
 import 'package:adzmavall/features/company_profile/data/brand_registration_repository.dart';
 import 'package:adzmavall/features/company_profile/presentation/cubit/company_profile_cubit.dart';
@@ -52,9 +53,11 @@ class _CompanyRegisterView extends StatelessWidget {
             if (message == null || message.trim().isEmpty) {
               return;
             }
-            ScaffoldMessenger.of(
+            showAppFeedback(
               context,
-            ).showSnackBar(SnackBar(content: Text(message)));
+              message: message,
+              type: AppFeedbackType.error,
+            );
           },
           builder: (BuildContext context, CompanyProfileState state) {
             final CompanyProfileCubit cubit = context

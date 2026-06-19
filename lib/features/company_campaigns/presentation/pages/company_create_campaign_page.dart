@@ -1,6 +1,7 @@
 import 'package:adzmavall/core/localization/app_strings.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/company_campaigns/data/company_campaigns_repository.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_back_app_bar.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_flow_dialogs.dart';
@@ -136,12 +137,10 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
         );
       } on Object {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Campaign saved locally. Continue selecting creators.',
-              ),
-            ),
+          showAppFeedback(
+            context,
+            message: 'Campaign saved locally. Continue selecting creators.',
+            type: AppFeedbackType.info,
           );
         }
       }

@@ -1,5 +1,6 @@
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/influencer_settings/data/settings_repository.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/widgets/settings_sub_app_bar.dart';
 import 'package:adzmavall/utils/appcolors.dart';
@@ -53,8 +54,10 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     } on Object {
       if (mounted) {
         setState(() => _notifications = previous);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update notifications')),
+        showAppFeedback(
+          context,
+          message: 'Could not update notifications',
+          type: AppFeedbackType.error,
         );
       }
     } finally {

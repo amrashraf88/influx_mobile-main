@@ -1,6 +1,7 @@
 import 'package:adzmavall/core/lookup/lookup_item.dart';
 import 'package:adzmavall/core/lookup/lookup_repository.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/core/widgets/app_feedback.dart';
 import 'package:adzmavall/features/auth/data/auth_repository.dart'
     show ApiException;
 import 'package:adzmavall/features/influencer_profile/data/profile_edit_repository.dart';
@@ -314,9 +315,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // Tell the Profile / Settings screens to refetch fresh data.
       requestInfluencerProfileRefresh();
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      showAppFeedback(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+        message: 'Profile updated',
+        type: AppFeedbackType.success,
+      );
       Navigator.of(context).maybePop();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
