@@ -8,6 +8,7 @@ import 'package:adzmavall/features/influencer_settings/data/wallet_repository.da
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:adzmavall/utils/imageassets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
@@ -83,17 +84,16 @@ class _CompanyWalletPageState extends State<CompanyWalletPage> {
   }) async {
     final WalletRepository repo = WalletRepository(DioClient.instance);
     try {
+      final WalletActionResult result;
       if (withdraw) {
-        await repo.withdraw(amount);
+        result = await repo.withdraw(amount);
       } else {
-        await repo.chargeCard(amount);
+        result = await repo.chargeCard(amount);
       }
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(withdraw ? 'Withdraw sent' : 'Charge started')),
-      );
+      await _showWalletResult(result);
       await _loadWallet();
     } on Object catch (e) {
       if (!mounted) {
@@ -103,6 +103,52 @@ class _CompanyWalletPageState extends State<CompanyWalletPage> {
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
+  }
+
+  Future<void> _showWalletResult(WalletActionResult result) async {
+    if (result.redirectUrl == null || result.redirectUrl!.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Payment link'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(result.message),
+              SizedBox(height: 10.h),
+              SelectableText(
+                result.redirectUrl!,
+                style: TextStyle(color: AppColors.brandBlue, fontSize: 12.sp),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: result.redirectUrl!));
+                Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Payment link copied')),
+                );
+              },
+              child: const Text('Copy link'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Done'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _showAmountSheet({required bool withdraw}) async {

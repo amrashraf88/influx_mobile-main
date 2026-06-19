@@ -96,6 +96,85 @@ class WalletTransaction {
   }
 }
 
+class WalletActionResult {
+  const WalletActionResult({required this.message, this.redirectUrl});
+
+  final String message;
+  final String? redirectUrl;
+
+  factory WalletActionResult.fromResponse(dynamic data, String fallback) {
+    final Map<String, dynamic> json = _extractMap(data);
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final Object? value = json[key];
+        if (value is Map) {
+          final String nested = WalletActionResult._pickNested(value);
+          if (nested.isNotEmpty) {
+            return nested;
+          }
+        }
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return value.toString().trim();
+        }
+      }
+      return '';
+    }
+
+    final String message = pick(<String>[
+      'message',
+      'status_message',
+      'statusMessage',
+      'label',
+    ]);
+    final String redirectUrl = pick(<String>[
+      'payment_url',
+      'paymentUrl',
+      'redirect_url',
+      'redirectUrl',
+      'checkout_url',
+      'checkoutUrl',
+      'url',
+      'link',
+    ]);
+
+    return WalletActionResult(
+      message: message.isEmpty ? fallback : message,
+      redirectUrl: redirectUrl.isEmpty ? null : redirectUrl,
+    );
+  }
+
+  static Map<String, dynamic> _extractMap(dynamic data) {
+    if (data is Map) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(data);
+      for (final String key in <String>[
+        'data',
+        'result',
+        'payload',
+        'payment',
+        'wallet',
+      ]) {
+        final Object? inner = map[key];
+        if (inner is Map) {
+          return <String, dynamic>{...map, ...Map<String, dynamic>.from(inner)};
+        }
+      }
+      return map;
+    }
+    return <String, dynamic>{};
+  }
+
+  static String _pickNested(Map<dynamic, dynamic> value) {
+    final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+    for (final String key in <String>['message', 'label', 'value', 'url']) {
+      final Object? nested = map[key];
+      if (nested != null && nested.toString().trim().isNotEmpty) {
+        return nested.toString().trim();
+      }
+    }
+    return '';
+  }
+}
+
 class WalletRepository {
   WalletRepository(this._dio);
 
@@ -136,23 +215,25 @@ class WalletRepository {
     }
   }
 
-  Future<void> chargeCard(num amount) async {
+  Future<WalletActionResult> chargeCard(num amount) async {
     try {
-      await _dio.post<dynamic>(
+      final Response<dynamic> res = await _dio.post<dynamic>(
         ApiUrlResolver.resolve(ApiEndpoints.applicationWalletChargeCardPath),
         data: <String, dynamic>{'amount': amount},
       );
+      return WalletActionResult.fromResponse(res.data, 'Charge started');
     } on DioException catch (e) {
       throw ApiException(ApiErrorParser.messageFromDio(e));
     }
   }
 
-  Future<void> withdraw(num amount) async {
+  Future<WalletActionResult> withdraw(num amount) async {
     try {
-      await _dio.post<dynamic>(
+      final Response<dynamic> res = await _dio.post<dynamic>(
         ApiUrlResolver.resolve(ApiEndpoints.applicationWalletWithdrawPath),
         data: <String, dynamic>{'amount': amount},
       );
+      return WalletActionResult.fromResponse(res.data, 'Withdraw sent');
     } on DioException catch (e) {
       throw ApiException(ApiErrorParser.messageFromDio(e));
     }
