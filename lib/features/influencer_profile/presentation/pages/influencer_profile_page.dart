@@ -821,7 +821,18 @@ InfluencerProfileSummaryData _summaryFromJson(
       'username',
     ], fallback.name),
     title: _creatorTitle(creatorType, headline, fallback.title),
-    bio: _pick(json, <String>['bio', 'about', 'description'], fallback.bio),
+    bio: _pick(json, <String>[
+      'bio',
+      'about',
+      'about_me',
+      'aboutMe',
+      'description',
+      'profile_bio',
+      'profileBio',
+      'biography',
+      'intro',
+      'introduction',
+    ], fallback.bio),
     avatarUrl: _pick(json, <String>[
       'avatar_url',
       'avatarUrl',
@@ -858,24 +869,53 @@ String _pick(Map<String, dynamic> json, List<String> keys, String fallback) {
     return value?.toString().trim() ?? '';
   }
 
+  Object? valueAtPath(Map<String, dynamic> map, String path) {
+    Object? current = map;
+    for (final String segment in path.split('.')) {
+      if (current is! Map) {
+        return null;
+      }
+      current = current[segment];
+    }
+    return current;
+  }
+
   final List<Map<String, dynamic>> maps = <Map<String, dynamic>>[json];
-  for (final String objectKey in <String>[
-    'user',
-    'profile',
-    'content_creator',
-    'contentCreator',
-    'creator',
-  ]) {
-    final Object? value = json[objectKey];
-    if (value is Map) {
-      maps.add(Map<String, dynamic>.from(value));
+  final Set<Map<dynamic, dynamic>> seen = <Map<dynamic, dynamic>>{};
+
+  void addKnownNested(Map<String, dynamic> source) {
+    if (!seen.add(source)) {
+      return;
+    }
+    for (final String objectKey in <String>[
+      'data',
+      'user',
+      'profile',
+      'content_creator',
+      'contentCreator',
+      'creator',
+      'details',
+      'mawthooq_profile',
+      'mawthooqProfile',
+    ]) {
+      final Object? value = source[objectKey];
+      if (value is Map) {
+        final Map<String, dynamic> nested = Map<String, dynamic>.from(value);
+        maps.add(nested);
+        addKnownNested(nested);
+      }
     }
   }
+
+  addKnownNested(json);
+
   for (final Map<String, dynamic> map in maps) {
     for (final String key in keys) {
-      final Object? value = map[key];
+      final Object? value = key.contains('.')
+          ? valueAtPath(map, key)
+          : map[key];
       final String text = stringify(value);
-      if (text.isNotEmpty) {
+      if (text.isNotEmpty && text != 'null') {
         return text;
       }
     }
@@ -898,9 +938,20 @@ String _creatorTitle(String creatorType, String headline, String fallback) {
 
 String _mawthooqLabel(Map<String, dynamic> json, String fallback) {
   final String license = _pick(json, <String>[
+    'mawthooq_profile.license_number',
+    'mawthooq_profile.licenseNumber',
+    'mawthooq_profile.number',
+    'mawthooqProfile.license_number',
+    'mawthooqProfile.licenseNumber',
+    'mawthooqProfile.number',
     'mawthooq_license_number',
     'mawthooqLicenseNumber',
+    'mawthooq_number',
+    'mawthooqNumber',
+    'mawthooq_license',
+    'mawthooqLicense',
     'license_number',
+    'licenseNumber',
     'mawthooq',
   ], '');
   if (license.isEmpty) {

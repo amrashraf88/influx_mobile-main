@@ -141,9 +141,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _phone.text = _str(p['phone_number']).isNotEmpty
           ? _str(p['phone_number'])
           : _str(p['phone']);
-      _bio.text = <String>['bio', 'about', 'description']
-          .map((String k) => _str(p[k]))
-          .firstWhere((String s) => s.isNotEmpty, orElse: () => '');
+      _bio.text =
+          <String>[
+                'bio',
+                'about',
+                'about_me',
+                'aboutMe',
+                'description',
+                'profile_bio',
+                'profileBio',
+                'biography',
+                'intro',
+                'introduction',
+              ]
+              .map((String k) => _str(p[k]))
+              .firstWhere((String s) => s.isNotEmpty, orElse: () => '');
       _city = _valueOf(p['city']);
       _direction = _valueOf(p['city_direction']);
       _gender = _valueOf(p['gender'])?.toLowerCase();
@@ -228,13 +240,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String _mawthooqFrom(Map<String, dynamic> p) {
     final Object? m = p['mawthooq_profile'];
     if (m is Map) {
-      final String nested = _str(m['license_number'] ?? m['number']);
+      final String nested = _str(
+        m['license_number'] ?? m['licenseNumber'] ?? m['number'],
+      );
+      if (nested.isNotEmpty) return nested;
+    }
+    final Object? camel = p['mawthooqProfile'];
+    if (camel is Map) {
+      final String nested = _str(
+        camel['license_number'] ?? camel['licenseNumber'] ?? camel['number'],
+      );
       if (nested.isNotEmpty) return nested;
     }
     for (final String k in <String>[
       'mawthooq_license_number',
       'mawthooqLicenseNumber',
+      'mawthooq_number',
+      'mawthooqNumber',
+      'mawthooq_license',
+      'mawthooqLicense',
       'license_number',
+      'licenseNumber',
       'mawthooq',
     ]) {
       final String s = _str(p[k]);
