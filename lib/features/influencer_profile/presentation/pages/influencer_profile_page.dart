@@ -38,13 +38,10 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
   bool _editing = false;
   bool _loading = true;
   bool _busy = false;
-  _InfluencerProfilePageData _data = _InfluencerProfilePageData.fallback();
+  _InfluencerProfilePageData _data = _InfluencerProfilePageData.empty();
 
   CreatorProfileRepository get _repo =>
       CreatorProfileRepository(DioClient.instance);
-
-  /// Edit/add/delete is only available for content creators (influencer).
-  bool get _isInfluencer => _data.creatorType == 'influencer';
 
   /// Tabs that hold an editable list of items (add + delete).
   bool get _isListTab =>
@@ -85,7 +82,7 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
       final CreatorProfileBundle bundle = await _repo.fetchAll();
       final Map<String, dynamic> json = bundle.profile;
       return _InfluencerProfilePageData(
-        summary: _summaryFromJson(json, InfluencerProfileViewData.summary),
+        summary: _summaryFromJson(json, _emptySummary),
         rawProfile: json,
         creatorType: _pick(json, <String>[
           'creator_type',
@@ -365,7 +362,9 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     final bool isArabic = locale.languageCode == 'ar';
     final double topInset = MediaQuery.paddingOf(context).top;
     final _InfluencerProfilePageData data = _data;
-    final bool canEdit = _isInfluencer;
+    // This screen is the creator's own (influencer) profile, so editing is
+    // always available here. Other creator types get their own screens later.
+    const bool canEdit = true;
     final bool listEditing = _editing && _isListTab;
 
     return Directionality(
@@ -569,6 +568,17 @@ class _InfluencerProfilePageData {
     required this.tabData,
   });
 
+  /// Empty state shown while loading / when the API returns nothing.
+  factory _InfluencerProfilePageData.empty() {
+    return _InfluencerProfilePageData(
+      summary: _emptySummary,
+      rawProfile: const <String, dynamic>{},
+      creatorType: 'influencer',
+      tabData: CreatorProfileTabData.empty(),
+    );
+  }
+
+  /// Sample state used only when the API is not configured (pure-UI mode).
   factory _InfluencerProfilePageData.fallback() {
     return _InfluencerProfilePageData(
       summary: InfluencerProfileViewData.summary,
@@ -583,6 +593,15 @@ class _InfluencerProfilePageData {
   final String creatorType;
   final CreatorProfileTabData tabData;
 }
+
+/// Blank summary used when the API is configured but returns no profile fields.
+const InfluencerProfileSummaryData _emptySummary = InfluencerProfileSummaryData(
+  name: '',
+  title: '',
+  bio: '',
+  avatarUrl: '',
+  mawthooqLabel: '',
+);
 
 InfluencerProfileSummaryData _summaryFromJson(
   Map<String, dynamic> json,

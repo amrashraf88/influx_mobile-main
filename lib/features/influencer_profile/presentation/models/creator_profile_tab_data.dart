@@ -89,7 +89,21 @@ class CreatorProfileTabData {
   final List<String> ageRanges;
   final List<String> platforms;
 
-  /// Sample data used before the API is configured or when it returns nothing.
+  /// Empty data — shown when the API is configured but returns nothing.
+  factory CreatorProfileTabData.empty() {
+    return const CreatorProfileTabData(
+      accounts: <CreatorAccountMetric>[],
+      clients: <CreatorClientItem>[],
+      clientCategories: <String>[],
+      adPriceItems: <CreatorAdPriceItem>[],
+      ads: <CreatorAdPreviewItem>[],
+      keywords: <String>[],
+      ageRanges: <String>[],
+      platforms: <String>[],
+    );
+  }
+
+  /// Sample data used only before the API is configured (pure-UI mode).
   factory CreatorProfileTabData.fallback() {
     return CreatorProfileTabData(
       accounts: InfluencerProfileViewData.accountMetrics
@@ -140,10 +154,9 @@ class CreatorProfileTabData {
     );
   }
 
-  /// Builds tab data from the API bundle, using [fallback] for empty sections.
+  /// Builds tab data straight from the API bundle. Sections the API leaves
+  /// empty stay empty (no sample data is injected).
   factory CreatorProfileTabData.fromBundle(CreatorProfileBundle bundle) {
-    final CreatorProfileTabData fb = CreatorProfileTabData.fallback();
-
     final List<CreatorAccountMetric> accounts = bundle.socialAccounts
         .map(_accountFromJson)
         .where((CreatorAccountMetric a) => a.label.isNotEmpty)
@@ -189,16 +202,14 @@ class CreatorProfileTabData {
     );
 
     return CreatorProfileTabData(
-      accounts: accounts.isNotEmpty ? accounts : fb.accounts,
-      clients: clients.isNotEmpty ? clients : fb.clients,
-      clientCategories: clientCategories.isNotEmpty
-          ? clientCategories
-          : fb.clientCategories,
-      adPriceItems: adPriceItems.isNotEmpty ? adPriceItems : fb.adPriceItems,
-      ads: ads.isNotEmpty ? ads : fb.ads,
-      keywords: keywords.isNotEmpty ? keywords : fb.keywords,
-      ageRanges: ageRanges.isNotEmpty ? ageRanges : fb.ageRanges,
-      platforms: platforms.isNotEmpty ? platforms : fb.platforms,
+      accounts: accounts,
+      clients: clients,
+      clientCategories: clientCategories,
+      adPriceItems: adPriceItems,
+      ads: ads,
+      keywords: keywords,
+      ageRanges: ageRanges,
+      platforms: platforms,
     );
   }
 

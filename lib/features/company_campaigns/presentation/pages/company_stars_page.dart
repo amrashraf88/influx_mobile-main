@@ -44,7 +44,7 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
   @override
   void initState() {
     super.initState();
-    _stars = List<CompanyStarListItem>.from(CompanyStarsViewData.stars);
+    _stars = <CompanyStarListItem>[];
     if (widget.selectionMode) {
       _secondaryTabOn = false;
     }
@@ -66,6 +66,15 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
   /// Loads the next page (or page 1 when [reset]), appending de-duplicated rows.
   Future<void> _loadPage({bool reset = false}) async {
     if (!ApiUrlResolver.isConfigured) {
+      // Pure-UI mode (no backend): show sample data once.
+      if (_stars.isEmpty) {
+        setState(
+          () => _stars = List<CompanyStarListItem>.from(
+            CompanyStarsViewData.stars,
+          ),
+        );
+      }
+      _hasMore = false;
       return;
     }
     if (_loadingMore) {
@@ -119,9 +128,8 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
       setState(() {
         _loadingMore = false;
         _initialLoading = false;
-        if (reset && _stars.isEmpty) {
-          // Network/API failure on first page: show sample data instead.
-          _stars = List<CompanyStarListItem>.from(CompanyStarsViewData.stars);
+        if (reset) {
+          // Keep the list empty on failure — the empty state is shown.
           _hasMore = false;
         }
       });
@@ -331,6 +339,8 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
             Expanded(
               child: (_initialLoading && _stars.isEmpty)
                   ? const Center(child: CircularProgressIndicator())
+                  : (_visible.isEmpty
+                  ? _StarsEmptyState(locale: locale)
                   : Stack(
                       children: <Widget>[
                         if (widget.selectionMode)
@@ -403,7 +413,7 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
                             ),
                           ),
                       ],
-                    ),
+                    )),
             ),
           ],
         ),
@@ -441,6 +451,42 @@ class _CompanyStarsPageState extends State<CompanyStarsPage> {
               ),
             )
           : null,
+    );
+  }
+}
+
+class _StarsEmptyState extends StatelessWidget {
+  const _StarsEmptyState({required this.locale});
+
+  final Locale locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isArabic = locale.languageCode == 'ar';
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.people_outline_rounded,
+              size: 56.sp,
+              color: AppColors.textSecondary,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              isArabic ? 'لا يوجد نتائج' : 'No stars found',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

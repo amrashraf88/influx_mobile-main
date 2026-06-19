@@ -55,6 +55,33 @@ class InfluencerProfileTabContent extends StatelessWidget {
   }
 }
 
+/// Empty-state card shown when a tab has no data from the API.
+class _EmptyPanel extends StatelessWidget {
+  const _EmptyPanel(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return InfluencerPanelCard(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 18.h),
+        child: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Small red delete badge overlaid on list items while editing.
 class _DeleteBadge extends StatelessWidget {
   const _DeleteBadge({required this.onTap});
@@ -273,6 +300,9 @@ class _AccountsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (accounts.isEmpty) {
+      return const _EmptyPanel('No accounts yet.');
+    }
     return InfluencerPanelCard(
       child: GridView.builder(
         shrinkWrap: true,
@@ -368,6 +398,9 @@ class _ClientsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (data.clients.isEmpty) {
+      return const _EmptyPanel('No clients yet.');
+    }
     return Column(
       children: <Widget>[
         if (data.clientCategories.isNotEmpty)
@@ -496,6 +529,9 @@ class _AdPricePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const _EmptyPanel('No ad prices yet.');
+    }
     return Column(
       children: items
           .map(
@@ -658,6 +694,11 @@ class _OverviewPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (data.keywords.isEmpty &&
+        data.ageRanges.isEmpty &&
+        data.platforms.isEmpty) {
+      return const _EmptyPanel('No overview details yet.');
+    }
     return InfluencerPanelCard(
       padding: EdgeInsets.fromLTRB(14.w, 18.h, 14.w, 18.h),
       child: Column(
@@ -746,6 +787,9 @@ class _AdsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (ads.isEmpty) {
+      return const _EmptyPanel('No ads yet.');
+    }
     return InfluencerPanelCard(
       child: SizedBox(
         height: 308.h,
