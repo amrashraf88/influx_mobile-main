@@ -43,6 +43,8 @@ class CreatorAdPriceItem {
     required this.followers,
     required this.coverage,
     required this.videoPrice,
+    required this.platformValue,
+    required this.profileUrl,
   });
 
   final String id;
@@ -51,6 +53,8 @@ class CreatorAdPriceItem {
   final String followers;
   final String coverage;
   final String videoPrice;
+  final String platformValue;
+  final String profileUrl;
 }
 
 /// A single ad preview in the "Ads" tab.
@@ -136,6 +140,8 @@ class CreatorProfileTabData {
               followers: '399.6k',
               coverage: '17,600',
               videoPrice: '3,500',
+              platformValue: p.label.toLowerCase(),
+              profileUrl: '',
             ),
           )
           .toList(),
@@ -292,6 +298,21 @@ class CreatorProfileTabData {
 
   static CreatorAdPriceItem _adPriceFromJson(Map<String, dynamic> json) {
     final String platform = _extractPlatform(json);
+    final String platformValue = _pick(json, <String>[
+      'platform_id',
+      'platformId',
+      'social_platform_id',
+      'socialPlatformId',
+      'platform.value',
+      'platform.id',
+      'social_platform.value',
+      'social_platform.id',
+      'socialPlatform.value',
+      'socialPlatform.id',
+      'platform',
+      'social_platform',
+      'socialPlatform',
+    ]);
     return CreatorAdPriceItem(
       id: _pickId(json),
       label: _platformLabel(platform),
@@ -330,6 +351,21 @@ class CreatorProfileTabData {
           'fansCount',
         ]),
       ),
+      platformValue: platformValue.isNotEmpty
+          ? platformValue
+          : platform.trim().toLowerCase(),
+      profileUrl: _pick(json, <String>[
+        'profile_url',
+        'profileUrl',
+        'url',
+        'link',
+        'account.profile_url',
+        'account.profileUrl',
+        'social_account.profile_url',
+        'social_account.profileUrl',
+        'socialAccount.profile_url',
+        'socialAccount.profileUrl',
+      ]),
       coverage: _formatPrice(
         _pick(json, <String>[
           'coverage_price',

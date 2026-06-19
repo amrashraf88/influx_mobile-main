@@ -360,18 +360,23 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
           label: 'Video / post price',
           number: true,
         ),
+        const CreatorFormField(
+          key: 'profile_url',
+          label: 'Profile link',
+          hint: 'Required if the account has no saved link',
+        ),
       ],
     );
     if (r == null) return;
 
-    String accountId = '';
+    CreatorAdPriceItem? selectedItem;
     for (final CreatorAdPriceItem p in items) {
       if (p.label == r['platform']) {
-        accountId = p.id;
+        selectedItem = p;
         break;
       }
     }
-    if (accountId.isEmpty) return;
+    if (selectedItem == null || selectedItem.id.isEmpty) return;
 
     final List<Map<String, dynamic>> prices = <Map<String, dynamic>>[];
     final int? coverage = int.tryParse(r['coverage_price'] ?? '');
@@ -387,8 +392,22 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
     }
     if (prices.isEmpty) return;
 
+    final String platform = selectedItem.platformValue.trim();
+    final String profileUrl = _has(r['profile_url'])
+        ? r['profile_url']!.trim()
+        : selectedItem.profileUrl.trim();
+    if (platform.isEmpty || profileUrl.isEmpty) {
+      _toast(
+        'Profile link is required to update this account.',
+        type: AppFeedbackType.error,
+      );
+      return;
+    }
+    final String accountId = selectedItem.id;
     await _runWrite(
       () => _repo.updateSocialAccount(accountId, <String, dynamic>{
+        'platform': platform,
+        'profile_url': profileUrl,
         'prices': prices,
       }),
     );
