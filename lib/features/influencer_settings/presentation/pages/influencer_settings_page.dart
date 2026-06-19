@@ -1,7 +1,10 @@
 import 'package:adzmavall/core/auth/auth_token_storage.dart';
+import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/routes/route_names.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/pages/edit_profile_page.dart';
 import 'package:adzmavall/features/influencer_profile/presentation/widgets/influencer_header_background.dart';
+import 'package:adzmavall/features/influencer_settings/data/settings_repository.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/influencer_settings_static_menu.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/models/influencer_settings_models.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/pages/about_app_page.dart';
@@ -18,8 +21,33 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-class InfluencerSettingsPage extends StatelessWidget {
+class InfluencerSettingsPage extends StatefulWidget {
   const InfluencerSettingsPage({super.key});
+
+  @override
+  State<InfluencerSettingsPage> createState() => _InfluencerSettingsPageState();
+}
+
+class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
+  InfluencerSettingsProfile _profile = InfluencerSettingsStaticMenu.demoProfile;
+
+  SettingsRepository get _repo => SettingsRepository(DioClient.instance);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    if (!ApiUrlResolver.isConfigured) return;
+    try {
+      final InfluencerSettingsProfile p = await _repo.fetchProfile();
+      if (mounted) setState(() => _profile = p);
+    } on Object {
+      // Keep the demo fallback already in _profile.
+    }
+  }
 
   void _push(BuildContext context, Widget page) {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
@@ -103,6 +131,14 @@ class InfluencerSettingsPage extends StatelessWidget {
     );
 
     if (confirm == true) {
+      // Best-effort server-side logout; always clear the local token after.
+      if (ApiUrlResolver.isConfigured) {
+        try {
+          await _repo.logout();
+        } on Object {
+          // Ignore — proceed with local sign-out regardless.
+        }
+      }
       await AuthTokenStorage.instance.clearToken();
       if (context.mounted) {
         context.go(RouteNames.onboarding);
@@ -155,8 +191,7 @@ class InfluencerSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
     final bool isArabic = locale.languageCode == 'ar';
-    const InfluencerSettingsProfile profile =
-        InfluencerSettingsStaticMenu.demoProfile;
+    final InfluencerSettingsProfile profile = _profile;
 
     return Directionality(
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,

@@ -1,3 +1,6 @@
+import 'package:adzmavall/core/network/api_url_resolver.dart';
+import 'package:adzmavall/core/network/dio_client.dart';
+import 'package:adzmavall/features/influencer_settings/data/settings_repository.dart';
 import 'package:adzmavall/features/influencer_settings/presentation/widgets/settings_sub_app_bar.dart';
 import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +17,50 @@ class AppSettingsPage extends StatefulWidget {
 class _AppSettingsPageState extends State<AppSettingsPage> {
   bool _notifications = true;
   bool _location = false;
+  bool _savingNotifications = false;
+
+  SettingsRepository get _repo => SettingsRepository(DioClient.instance);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    if (!ApiUrlResolver.isConfigured) return;
+    try {
+      final bool enabled = await _repo.fetchNotificationsEnabled();
+      if (mounted) setState(() => _notifications = enabled);
+    } on Object {
+      // Keep the default; the toggle still works locally.
+    }
+  }
+
+  Future<void> _setNotifications(bool value) async {
+    if (_savingNotifications) return;
+    final bool previous = _notifications;
+    setState(() {
+      _notifications = value;
+      _savingNotifications = true;
+    });
+    if (!ApiUrlResolver.isConfigured) {
+      setState(() => _savingNotifications = false);
+      return;
+    }
+    try {
+      await _repo.setNotificationsEnabled(value);
+    } on Object {
+      if (mounted) {
+        setState(() => _notifications = previous);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update notifications')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingNotifications = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +79,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                     Icons.notifications_none_rounded,
                     'Notification',
                     _notifications,
-                    (bool v) => setState(() => _notifications = v),
+                    _setNotifications,
                   ),
                   const Divider(height: 1),
                   _toggle(
