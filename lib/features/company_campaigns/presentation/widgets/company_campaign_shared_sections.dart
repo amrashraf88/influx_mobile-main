@@ -220,9 +220,11 @@ class CompanyCampaignPlatformSection extends StatefulWidget {
   const CompanyCampaignPlatformSection({
     super.key,
     Set<String>? initialSelected,
+    this.onChanged,
   }) : initialSelected = initialSelected ?? const <String>{'Instagram'};
 
   final Set<String> initialSelected;
+  final ValueChanged<Set<String>>? onChanged;
 
   @override
   State<CompanyCampaignPlatformSection> createState() =>
@@ -255,6 +257,7 @@ class _CompanyCampaignPlatformSectionState
               } else {
                 _selected.add(platform);
               }
+              widget.onChanged?.call(Set<String>.from(_selected));
             });
           },
         ),

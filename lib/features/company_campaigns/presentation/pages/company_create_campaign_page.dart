@@ -2,6 +2,8 @@ import 'package:adzmavall/core/localization/app_strings.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
 import 'package:adzmavall/core/network/dio_client.dart';
 import 'package:adzmavall/core/widgets/app_feedback.dart';
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:adzmavall/features/company_campaigns/data/company_campaigns_repository.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_back_app_bar.dart';
 import 'package:adzmavall/features/company_campaigns/presentation/widgets/company_campaign_flow_dialogs.dart';
@@ -13,6 +15,7 @@ import 'package:adzmavall/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 /// Create campaign form — UI only until backend is ready.
 class CompanyCreateCampaignPage extends StatefulWidget {
@@ -54,6 +57,7 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
   bool _isSubmitting = false;
   String? _followers;
   String? _ageGroup;
+  Set<String> _selectedPlatforms = const <String>{'Instagram'};
 
   @override
   void dispose() {
@@ -114,17 +118,111 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
     };
   }
 
+  String? _deliveryForApi(Locale locale) {
+    final String raw = _delivery.text.trim();
+    if (raw.isEmpty) {
+      return null;
+    }
+    try {
+      final DateTime parsed = DateFormat(
+        'dd MMMM, yyyy',
+        locale.languageCode,
+      ).parseStrict(raw);
+      return DateFormat('yyyy-MM-dd').format(parsed);
+    } on Object {
+      return null;
+    }
+  }
+
+  String? _targetFollowersValue(String? label) {
+    final String value = label?.trim().toLowerCase() ?? '';
+    if (value.isEmpty) return null;
+    if (value.contains('all') || value.contains('كل')) return 'all';
+    if (value.contains('1m') || value.contains('1 m')) return 'more_than_1m';
+    if (value.contains('500') && value.contains('1')) return 'from_500k_to_1m';
+    if (value.contains('250') && value.contains('500')) {
+      return 'from_250k_to_500k';
+    }
+    if (value.contains('250')) return 'less_than_250k';
+    return null;
+  }
+
+  String? _targetAgeValue(String? label) {
+    final String value = label?.trim().toLowerCase() ?? '';
+    if (value.isEmpty) return null;
+    if (value.contains('all') || value.contains('كل')) return 'all';
+    if (value.contains('40') && !value.contains('31')) return 'more_than_40';
+    if (value.contains('31') || value.contains('30-40')) return 'from_30_to_40';
+    if (value.contains('25') || value.contains('20-30')) return 'from_20_to_30';
+    if (value.contains('20')) return 'less_than_20';
+    return null;
+  }
+
+  List<String> _platformValues() {
+    return _selectedPlatforms
+        .map((String platform) {
+          final String value = platform.trim().toLowerCase();
+          if (value.contains('insta')) return 'instagram';
+          if (value.contains('tik')) return 'tiktok';
+          if (value.contains('snap')) return 'snapchat';
+          if (value == 'x' || value.contains('twitter')) return 'x';
+          if (value.contains('you')) return 'youtube';
+          if (value.contains('face')) return 'facebook';
+          if (value.contains('linkedin')) return 'linkedin';
+          if (value.contains('pinterest')) return 'pinterest';
+          if (value.contains('thread')) return 'threads';
+          if (value.contains('telegram')) return 'telegram';
+          if (value.contains('whats')) return 'whatsapp';
+          return value.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+        })
+        .where((String value) => value.trim().isNotEmpty)
+        .toSet()
+        .toList();
+  }
+
+  void _toast(String message, {AppFeedbackType type = AppFeedbackType.info}) {
+    if (!mounted) return;
+    showAppFeedback(context, message: message, type: type);
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting) {
+      return;
+    }
+    final Locale locale = Localizations.localeOf(context);
+    final String title = _title.text.trim();
+    final String description = _details.text.trim();
+    final String? deliveryDate = _deliveryForApi(locale);
+    final List<String> platforms = _platformValues();
+    if (title.isEmpty) {
+      _toast('Campaign title is required.', type: AppFeedbackType.error);
+      return;
+    }
+    if (description.isEmpty) {
+      _toast('Campaign details are required.', type: AppFeedbackType.error);
+      return;
+    }
+    if (deliveryDate == null) {
+      _toast(
+        'Please select a valid delivery date.',
+        type: AppFeedbackType.error,
+      );
+      return;
+    }
+    if (platforms.isEmpty) {
+      _toast(
+        'Please choose at least one platform.',
+        type: AppFeedbackType.error,
+      );
       return;
     }
     setState(() => _isSubmitting = true);
     if (ApiUrlResolver.isConfigured) {
       try {
         await CompanyCampaignsRepository(DioClient.instance).createCampaign(
-          title: _title.text.trim(),
-          description: _details.text.trim(),
-          deliveryDate: _delivery.text.trim(),
+          title: title,
+          description: description,
+          deliveryDate: deliveryDate,
           brandName: _brand.text.trim(),
           websiteLink: _website.text.trim(),
           budgetFrom: num.tryParse(_budgetMin.text.trim()) ?? 0,
@@ -133,16 +231,15 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
           faceVisible: _faceVisible,
           hairVisible: _hairVisible,
           handsVisible: _handsVisible,
+          platforms: platforms,
+          targetFollowers: _targetFollowersValue(_followers),
+          targetAudienceAgeGroup: _targetAgeValue(_ageGroup),
           extraFields: _creatorExtraPayload(),
         );
-      } on Object {
-        if (mounted) {
-          showAppFeedback(
-            context,
-            message: 'Campaign saved locally. Continue selecting creators.',
-            type: AppFeedbackType.info,
-          );
-        }
+      } on ApiException catch (e) {
+        _toast(e.message, type: AppFeedbackType.error);
+        if (mounted) setState(() => _isSubmitting = false);
+        return;
       }
     }
     if (mounted) {
@@ -305,7 +402,11 @@ class _CompanyCreateCampaignPageState extends State<CompanyCreateCampaignPage> {
             SizedBox(height: 14.h),
             const CompanyCampaignPortfolioSection(),
             SizedBox(height: 14.h),
-            const CompanyCampaignPlatformSection(),
+            CompanyCampaignPlatformSection(
+              initialSelected: _selectedPlatforms,
+              onChanged: (Set<String> value) =>
+                  setState(() => _selectedPlatforms = value),
+            ),
             SizedBox(height: 20.h),
             SizedBox(
               width: double.infinity,

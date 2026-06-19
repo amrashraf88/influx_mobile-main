@@ -234,26 +234,39 @@ class CompanyCampaignsRepository {
     required bool faceVisible,
     required bool hairVisible,
     required bool handsVisible,
+    required List<String> platforms,
+    String? targetFollowers,
+    String? targetAudienceAgeGroup,
     Map<String, dynamic> extraFields = const <String, dynamic>{},
   }) async {
     final String url = ApiUrlResolver.resolve(ApiEndpoints.brandCampaignsPath);
-    await _dio.post<dynamic>(
-      url,
-      data: <String, dynamic>{
-        'title': title,
-        'description': description,
-        'delivery_date': deliveryDate,
-        'brand_name': brandName,
-        'website_link': websiteLink,
-        'budget_from': budgetFrom,
-        'budget_to': budgetTo,
-        'creator_type': _creatorTypeValue(creatorType),
-        'face_visibility': faceVisible ? 'yes' : 'no',
-        'show_hair': hairVisible ? 'yes' : 'no',
-        'hands_visibility': handsVisible ? 'yes' : 'no',
-        ...extraFields,
-      },
-    );
+    try {
+      await _dio.post<dynamic>(
+        url,
+        data: <String, dynamic>{
+          'title': title,
+          'description': description,
+          'delivery_date': deliveryDate,
+          if (brandName.trim().isNotEmpty) 'brand_name': brandName,
+          if (websiteLink.trim().isNotEmpty) 'website_link': websiteLink,
+          if (budgetFrom > 0) 'budget_from': budgetFrom,
+          if (budgetTo > 0) 'budget_to': budgetTo,
+          if (targetFollowers != null && targetFollowers.trim().isNotEmpty)
+            'target_followers': targetFollowers,
+          if (targetAudienceAgeGroup != null &&
+              targetAudienceAgeGroup.trim().isNotEmpty)
+            'target_audience_age_group': targetAudienceAgeGroup,
+          'platforms': platforms,
+          'creator_type': _creatorTypeValue(creatorType),
+          'face_visibility': faceVisible ? 'yes' : 'no',
+          'show_hair': hairVisible ? 'yes' : 'no',
+          'hands_visibility': handsVisible ? 'yes' : 'no',
+          ...extraFields,
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
+    }
   }
 
   Future<Map<String, dynamic>> createCampaignRequest({
