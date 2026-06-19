@@ -30,7 +30,15 @@ class _InfluencerHomePageState extends State<InfluencerHomePage> {
         : InfluencerOrdersMockRepository();
 
     final List<InfluencerOrder> orders = await ordersRepository.fetchOrders();
-    InfluencerProfileSummaryData profile = InfluencerProfileViewData.summary;
+    InfluencerProfileSummaryData profile = ApiUrlResolver.isConfigured
+        ? const InfluencerProfileSummaryData(
+            name: '',
+            title: '',
+            bio: '',
+            avatarUrl: '',
+            mawthooqLabel: '',
+          )
+        : InfluencerProfileViewData.summary;
     if (ApiUrlResolver.isConfigured) {
       try {
         final Map<String, dynamic> json = await ProfileEditRepository(

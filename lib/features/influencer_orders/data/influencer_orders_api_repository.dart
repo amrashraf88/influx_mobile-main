@@ -1,7 +1,9 @@
 import 'package:adzmavall/core/config/api_endpoints.dart';
+import 'package:adzmavall/core/network/api_error_parser.dart';
 import 'package:adzmavall/core/network/api_media.dart';
 import 'package:adzmavall/core/network/api_url_resolver.dart';
-import 'package:adzmavall/features/influencer_orders/data/influencer_orders_mock_repository.dart';
+import 'package:adzmavall/features/auth/data/auth_repository.dart'
+    show ApiException;
 import 'package:adzmavall/features/influencer_orders/data/influencer_orders_repository.dart';
 import 'package:adzmavall/features/influencer_orders/presentation/models/influencer_order_models.dart';
 import 'package:adzmavall/utils/imageassets.dart';
@@ -12,14 +14,11 @@ import 'package:dio/dio.dart';
 ///
 /// Responses are parsed defensively (the backend has no published example
 /// payloads yet). When the API returns nothing usable, the repository falls
-/// back to [InfluencerOrdersMockRepository] sample data so the screens keep
-/// rendering — the same philosophy used by the home/company repositories.
+/// back to empty/null instead of injecting sample orders.
 class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
-  InfluencerOrdersApiRepository(this._dio)
-    : _fallback = InfluencerOrdersMockRepository();
+  InfluencerOrdersApiRepository(this._dio);
 
   final Dio _dio;
-  final InfluencerOrdersMockRepository _fallback;
 
   @override
   Future<List<InfluencerOrder>> fetchOrders() async {
@@ -37,10 +36,10 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
       if (orders.isNotEmpty) {
         return orders;
       }
-    } on Object {
-      // Fall through to sample data below.
+      return const <InfluencerOrder>[];
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
     }
-    return _fallback.fetchOrders();
   }
 
   @override
@@ -54,10 +53,10 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
       if (map != null && map.isNotEmpty) {
         return _orderFromJson(map);
       }
-    } on Object {
-      // Fall through to sample data below.
+      return null;
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
     }
-    return _fallback.fetchOrder(orderId);
   }
 
   @override
@@ -69,14 +68,18 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
       final String url = ApiUrlResolver.resolve(
         ApiEndpoints.influencerOrderPath(orderId),
       );
-      await _dio.patch<dynamic>(
+      final Response<dynamic> res = await _dio.patch<dynamic>(
         url,
         data: <String, dynamic>{'status': _statusApiValue(status)},
       );
-    } on Object {
-      // Keep optimistic update even if the call fails offline.
+      final Map<String, dynamic>? map = _extractMap(res.data);
+      if (map != null && map.isNotEmpty) {
+        return _orderFromJson(map);
+      }
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
     }
-    return _fallback.updateOrderStatus(orderId: orderId, status: status);
+    throw const ApiException('Unexpected order update response.');
   }
 
   @override
@@ -88,30 +91,43 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
       final String url = ApiUrlResolver.resolve(
         ApiEndpoints.influencerOrderPublicationPath(orderId),
       );
-      await _dio.post<dynamic>(url, data: <String, dynamic>{'links': links});
-    } on Object {
-      // Optimistic update below.
+      final Response<dynamic> res = await _dio.post<dynamic>(
+        url,
+        data: <String, dynamic>{'links': links},
+      );
+      final Map<String, dynamic>? map = _extractMap(res.data);
+      if (map != null && map.isNotEmpty) {
+        return _orderFromJson(map);
+      }
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
     }
-    return _fallback.submitPublication(orderId: orderId, links: links);
+    throw const ApiException('Unexpected publication response.');
   }
 
   @override
   Future<InfluencerOrder> uploadTaxInvoice({
     required String orderId,
     required String fileName,
+    required String filePath,
   }) async {
     try {
+      final int mediaId = await _uploadMedia(filePath);
       final String url = ApiUrlResolver.resolve(
         ApiEndpoints.influencerOrderTaxInvoicePath(orderId),
       );
-      await _dio.post<dynamic>(
+      final Response<dynamic> res = await _dio.post<dynamic>(
         url,
-        data: <String, dynamic>{'file_name': fileName},
+        data: <String, dynamic>{'file_name': fileName, 'media_id': mediaId},
       );
-    } on Object {
-      // Optimistic update below.
+      final Map<String, dynamic>? map = _extractMap(res.data);
+      if (map != null && map.isNotEmpty) {
+        return _orderFromJson(map);
+      }
+    } on DioException catch (e) {
+      throw ApiException(ApiErrorParser.messageFromDio(e));
     }
-    return _fallback.uploadTaxInvoice(orderId: orderId, fileName: fileName);
+    throw const ApiException('Unexpected tax invoice response.');
   }
 
   // ---------------------------------------------------------------------------
@@ -122,6 +138,26 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
     final String url = ApiUrlResolver.resolve(path);
     final Response<dynamic> res = await _dio.get<dynamic>(url);
     return _extractList(res.data);
+  }
+
+  Future<int> _uploadMedia(String filePath) async {
+    final Response<dynamic> res = await _dio.post<dynamic>(
+      ApiUrlResolver.resolve(ApiEndpoints.applicationMediaPath),
+      data: FormData.fromMap(<String, dynamic>{
+        'type': 'any',
+        'attachment': await MultipartFile.fromFile(filePath),
+      }),
+    );
+    final Map<String, dynamic>? map = _extractMap(res.data);
+    final Object? id = map?['id'];
+    if (id is num) {
+      return id.toInt();
+    }
+    final int? parsed = int.tryParse(id?.toString() ?? '');
+    if (parsed != null) {
+      return parsed;
+    }
+    throw const ApiException('Unable to upload the selected file.');
   }
 
   static InfluencerOrder _orderFromJson(Map<String, dynamic> json) {
@@ -388,12 +424,7 @@ class InfluencerOrdersApiRepository implements InfluencerOrdersRepository {
     }
     if (data is Map) {
       final Map<String, dynamic> map = Map<String, dynamic>.from(data);
-      for (final String key in <String>[
-        'data',
-        'results',
-        'items',
-        'orders',
-      ]) {
+      for (final String key in <String>['data', 'results', 'items', 'orders']) {
         final Object? v = map[key];
         if (v is List<dynamic>) {
           return v;

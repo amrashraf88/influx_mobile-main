@@ -110,7 +110,7 @@ class _InfluencerProfilePageState extends State<InfluencerProfilePage> {
         tabData: CreatorProfileTabData.fromBundle(bundle),
       );
     } on Object {
-      return _InfluencerProfilePageData.fallback();
+      return _InfluencerProfilePageData.empty();
     }
   }
 

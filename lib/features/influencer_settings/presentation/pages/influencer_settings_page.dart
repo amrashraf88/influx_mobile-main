@@ -31,7 +31,9 @@ class InfluencerSettingsPage extends StatefulWidget {
 }
 
 class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
-  InfluencerSettingsProfile _profile = InfluencerSettingsStaticMenu.demoProfile;
+  late InfluencerSettingsProfile _profile = ApiUrlResolver.isConfigured
+      ? InfluencerSettingsProfile.empty()
+      : InfluencerSettingsStaticMenu.demoProfile;
 
   SettingsRepository get _repo => SettingsRepository(DioClient.instance);
 
@@ -54,7 +56,7 @@ class _InfluencerSettingsPageState extends State<InfluencerSettingsPage> {
       final InfluencerSettingsProfile p = await _repo.fetchProfile();
       if (mounted) setState(() => _profile = p);
     } on Object {
-      // Keep the demo fallback already in _profile.
+      // Keep the current empty/API-safe state.
     }
   }
 

@@ -132,7 +132,7 @@ class InfluencerOrdersCubit extends Cubit<InfluencerOrdersState> {
   Future<void> pickDraftFile() async {
     final FilePickerResult? result = await FilePicker.pickFiles();
     final PlatformFile? file = result?.files.single;
-    if (file == null) {
+    if (file == null || file.path == null || file.path!.trim().isEmpty) {
       return;
     }
     emit(
@@ -156,6 +156,7 @@ class InfluencerOrdersCubit extends Cubit<InfluencerOrdersState> {
       final InfluencerOrder updated = await _repository.uploadTaxInvoice(
         orderId: orderId,
         fileName: file.name,
+        filePath: file.path!,
       );
       emit(
         state.copyWith(isActionLoading: false, orders: _upsertOrder(updated)),

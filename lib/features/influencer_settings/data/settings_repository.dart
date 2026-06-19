@@ -46,10 +46,10 @@ class SettingsRepository {
     }
   }
 
-  /// `PUT /application/users/notification-settings`.
+  /// `POST /application/users/notification-settings`.
   Future<void> setNotificationsEnabled(bool enabled) async {
     try {
-      await _dio.put<dynamic>(
+      await _dio.post<dynamic>(
         ApiUrlResolver.resolve(
           ApiEndpoints.applicationUserNotificationSettingsPath,
         ),

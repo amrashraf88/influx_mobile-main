@@ -51,6 +51,7 @@ class InfluencerOrdersMockRepository implements InfluencerOrdersRepository {
   Future<InfluencerOrder> uploadTaxInvoice({
     required String orderId,
     required String fileName,
+    required String filePath,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 180));
     return _replaceOrder(orderId, (InfluencerOrder order) {

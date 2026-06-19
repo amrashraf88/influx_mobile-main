@@ -18,5 +18,6 @@ abstract interface class InfluencerOrdersRepository {
   Future<InfluencerOrder> uploadTaxInvoice({
     required String orderId,
     required String fileName,
+    required String filePath,
   });
 }

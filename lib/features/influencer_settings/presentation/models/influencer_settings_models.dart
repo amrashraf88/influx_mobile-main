@@ -12,6 +12,15 @@ class InfluencerSettingsProfile {
   final String avatarUrl;
   final int verificationPercent;
 
+  factory InfluencerSettingsProfile.empty() {
+    return const InfluencerSettingsProfile(
+      name: '',
+      title: '',
+      avatarUrl: '',
+      verificationPercent: 100,
+    );
+  }
+
   factory InfluencerSettingsProfile.fromJson(Map<String, dynamic> json) {
     return InfluencerSettingsProfile(
       name: json['name'] as String? ?? '',
